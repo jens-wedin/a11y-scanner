@@ -102,7 +102,7 @@ export function IssueCard({ issue }: Props) {
             <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
               Code violation
             </h4>
-            <pre className="text-xs bg-red-50 border border-red-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words">
+            <pre className="text-xs text-gray-900 bg-red-50 border border-red-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words">
               <code>{issue.codeExample}</code>
             </pre>
           </div>
@@ -110,7 +110,7 @@ export function IssueCard({ issue }: Props) {
             <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
               Recommended fix
             </h4>
-            <pre className="text-xs bg-green-50 border border-green-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words">
+            <pre className="text-xs text-gray-900 bg-green-50 border border-green-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words">
               <code>{issue.recommendedFix}</code>
             </pre>
           </div>
