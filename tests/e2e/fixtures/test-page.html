@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test page with a11y issues</title>
+</head>
+<body>
+  <h1>Test page</h1>
+  <!-- Violation: missing alt on image -->
+  <img src="logo.png">
+  <!-- Violation: button with no label -->
+  <button></button>
+  <!-- Violation: form input with no label -->
+  <input type="text" placeholder="Search">
+  <!-- Valid content -->
+  <p>This is a paragraph.</p>
+  <a href="https://example.com">External link</a>
+</body>
+</html>
