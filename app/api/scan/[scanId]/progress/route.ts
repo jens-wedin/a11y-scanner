@@ -12,8 +12,11 @@ import { analyzeViolations } from "@/lib/analyzer";
 import { saveScanReport, computeSummary } from "@/lib/report";
 import type { ScanReport } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ scanId: string }> }
 ) {
   const { scanId } = await params;
@@ -42,7 +45,13 @@ export async function GET(
     start(controller) {
       addController(scanId, controller);
 
-      // Send SSE comment heartbeats every 15 s so the browser never drops the
+      // Send an immediate ping so the browser establishes the SSE connection
+      // before the first scan event (avoids onerror on slow-starting scans)
+      controller.enqueue(
+        new TextEncoder().encode(": connected\n\n")
+      );
+
+      // Send SSE comment heartbeats every 5 s so the browser never drops the
       // connection during long-running page scans
       const heartbeat = setInterval(() => {
         try {
@@ -50,7 +59,7 @@ export async function GET(
         } catch {
           clearInterval(heartbeat);
         }
-      }, 15_000);
+      }, 5_000);
 
       // Only start the scan pipeline if the job is in "scanning" status
       // (set by POST /api/scan/start)

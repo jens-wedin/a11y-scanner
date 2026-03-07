@@ -112,7 +112,27 @@ export async function analyzeViolations(
   const domain = new URL(targetUrl).hostname;
 
   const systemPrompt = buildSystemPrompt(skillContent);
-  const userMessage = `Analyze these axe-core violations from ${pageResults.length} pages of ${domain}:\n\n${JSON.stringify(pageResults, null, 2)}`;
+
+  // Trim raw HTML snippets to avoid exceeding Claude's context window on
+  // large sites. Keep enough for pattern recognition but cap each node.
+  const trimmedResults = pageResults.map((page) => ({
+    url: page.url,
+    scannedAt: page.scannedAt,
+    violations: page.violations.map((v) => ({
+      id: v.id,
+      impact: v.impact,
+      description: v.description,
+      help: v.help,
+      helpUrl: v.helpUrl,
+      nodes: v.nodes.slice(0, 3).map((n) => ({
+        html: n.html.slice(0, 300),
+        target: n.target,
+        failureSummary: n.failureSummary,
+      })),
+    })),
+  }));
+
+  const userMessage = `Analyze these axe-core violations from ${pageResults.length} pages of ${domain}:\n\n${JSON.stringify(trimmedResults, null, 2)}`;
 
   try {
     const response = await getClient().messages.create({
