@@ -3,21 +3,29 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { UrlPreviewList } from "@/components/UrlPreviewList";
-import type { CrawledUrl } from "@/lib/types";
+import type { CrawledUrl, ScanConfig } from "@/lib/types";
+
+interface StoredCrawl {
+  urls: CrawledUrl[];
+  config: ScanConfig;
+  headless: boolean;
+}
 
 export default function CrawlPreviewPage() {
   const params = useParams<{ scanId: string }>();
   const scanId = params.scanId;
   const router = useRouter();
   const [urls, setUrls] = useState<CrawledUrl[]>([]);
+  const [storedMeta, setStoredMeta] = useState<Omit<StoredCrawl, "urls"> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Retrieve crawled URLs stored by the home page after crawl completes
     const stored = sessionStorage.getItem(`crawl-${scanId}`);
     if (stored) {
-      setUrls(JSON.parse(stored) as CrawledUrl[]);
+      const parsed = JSON.parse(stored) as StoredCrawl;
+      setUrls(parsed.urls);
+      setStoredMeta({ config: parsed.config, headless: parsed.headless });
     }
   }, [scanId]);
 
@@ -29,7 +37,9 @@ export default function CrawlPreviewPage() {
       const res = await fetch("/api/scan/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scanId, selectedUrls }),
+        // Send config + headless so the server can recreate the job if the
+        // in-memory queue was cleared (e.g. by a dev-server hot reload)
+        body: JSON.stringify({ scanId, selectedUrls, ...storedMeta }),
       });
 
       if (!res.ok) {

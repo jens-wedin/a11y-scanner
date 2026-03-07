@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getJob, updateJob } from "@/lib/queue";
+import { getJob, updateJob, createJob } from "@/lib/queue";
+import type { ScanConfig, CrawledUrl } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { scanId, selectedUrls } = body as {
+    const { scanId, selectedUrls, config, headless } = body as {
       scanId: string;
       selectedUrls?: string[];
+      config?: ScanConfig & { selectedUrls?: string[] };
+      headless?: boolean;
     };
 
     if (!scanId) {
@@ -16,12 +19,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const job = getJob(scanId);
+    let job = getJob(scanId);
+
+    // Recreate the job if the in-memory queue was cleared (e.g. dev hot reload)
     if (!job) {
-      return NextResponse.json(
-        { error: "Scan job not found" },
-        { status: 404 }
-      );
+      if (!config || !selectedUrls) {
+        return NextResponse.json(
+          { error: "Scan job not found and no config provided to recreate it" },
+          { status: 404 }
+        );
+      }
+      const crawledUrls: CrawledUrl[] = selectedUrls.map((url) => ({
+        url,
+        depth: 0,
+      }));
+      createJob({
+        id: scanId,
+        status: "pending",
+        config,
+        startedAt: new Date().toISOString(),
+        progress: { scannedCount: 0, totalCount: crawledUrls.length },
+        crawledUrls,
+        headless: headless ?? true,
+      });
+      job = getJob(scanId)!;
     }
 
     if (job.status !== "pending") {

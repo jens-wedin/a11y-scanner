@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       progress: { scannedCount: 0, totalCount: urls.length },
     });
 
-    return NextResponse.json({ scanId, urls });
+    return NextResponse.json({ scanId, urls, headless });
   } catch (err) {
     console.error("Crawl error:", err);
     return NextResponse.json(
