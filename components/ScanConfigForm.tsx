@@ -53,7 +53,7 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
           onChange={(e) => setTargetUrl(e.target.value)}
           placeholder="https://example.com"
           required
-          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           aria-describedby={urlError ? "url-error" : undefined}
           aria-invalid={urlError ? true : undefined}
         />
@@ -95,7 +95,7 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
           onChange={(e) =>
             setMaxDepth(e.target.value === "" ? undefined : Number(e.target.value))
           }
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           {DEPTH_OPTIONS.map(({ label, value }) => (
             <option key={label} value={value ?? ""}>
