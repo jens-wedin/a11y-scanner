@@ -42,16 +42,28 @@ export async function GET(
     start(controller) {
       addController(scanId, controller);
 
+      // Send SSE comment heartbeats every 15 s so the browser never drops the
+      // connection during long-running page scans
+      const heartbeat = setInterval(() => {
+        try {
+          controller.enqueue(new TextEncoder().encode(": heartbeat\n\n"));
+        } catch {
+          clearInterval(heartbeat);
+        }
+      }, 15_000);
+
       // Only start the scan pipeline if the job is in "scanning" status
       // (set by POST /api/scan/start)
       if (job.status === "scanning") {
-        runScan(scanId).catch((err) => {
-          sendEvent(scanId, {
-            type: "error",
-            message: err instanceof Error ? err.message : "Scan failed",
-          });
-          closeStream(scanId);
-        });
+        runScan(scanId)
+          .catch((err) => {
+            sendEvent(scanId, {
+              type: "error",
+              message: err instanceof Error ? err.message : "Scan failed",
+            });
+            closeStream(scanId);
+          })
+          .finally(() => clearInterval(heartbeat));
       }
     },
     cancel() {

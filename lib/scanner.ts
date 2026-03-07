@@ -36,7 +36,7 @@ export async function scanPages(
           const page = await context.newPage();
           try {
             await page.goto(url, {
-              waitUntil: "networkidle",
+              waitUntil: "domcontentloaded",
               timeout: 30000,
             });
 
