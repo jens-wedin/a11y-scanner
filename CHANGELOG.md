@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] — 2026-03-07
+
+### Fixed
+
+- **SSE stability:** Added `force-dynamic` and `maxDuration=300` to the progress route to prevent Next.js from caching or timing out long-running streaming responses
+- **SSE stability:** Send immediate `: connected` ping on stream open so the browser never fires `onerror` before the first scan event arrives
+- **SSE stability:** Reduced heartbeat interval from 15 s to 5 s for more reliable keepalive on slow sites
+- **Analyzer payload:** Trim violation nodes to max 3 per violation and cap HTML snippets at 300 chars before sending to Claude, preventing context-window overflows and timeouts on large sites
+- **Bot-protection bypass:** Auto-retry crawl with `headless: false` when site returns 403; scanner inherits same headless flag
+- **Session recovery:** Recreate scan job from `sessionStorage` if in-memory queue is cleared (e.g. dev server restart)
+- **Error visibility:** Surface 403/bot-protection errors to the user instead of returning an empty URL list
+
 ## [0.1.0] — 2026-03-07
 
 ### Added
