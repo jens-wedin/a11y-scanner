@@ -23,10 +23,11 @@ export function normalizeUrl(url: string): string {
   }
 }
 
-export async function crawl(
+async function runCrawl(
   startUrl: string,
   maxPages: number,
-  maxDepth?: number
+  maxDepth: number | undefined,
+  headless: boolean
 ): Promise<CrawledUrl[]> {
   const origin = new URL(startUrl).origin;
   const visited = new Set<string>();
@@ -35,7 +36,7 @@ export async function crawl(
     { url: normalizeUrl(startUrl), depth: 0 },
   ];
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless });
   const context = await browser.newContext();
   const page = await context.newPage();
 
@@ -55,13 +56,10 @@ export async function crawl(
         });
 
         if (!response || !response.ok()) {
-          // If the very first URL (start URL) is blocked, surface a clear error
+          // If the very first URL is blocked, surface a clear error
           if (result.length === 0 && visited.size === 1) {
             const status = response?.status() ?? 0;
-            throw new Error(
-              `The site returned ${status} — it may be blocking automated scanning (bot protection). ` +
-              `Try disabling bot protection (e.g. Cloudflare) for the scan, or test a different URL.`
-            );
+            throw new Error(`BOT_PROTECTION:${status}`);
           }
           continue;
         }
@@ -88,8 +86,8 @@ export async function crawl(
           }
         }
       } catch (err) {
-        // Re-throw errors that should abort the crawl (e.g. bot protection on start URL)
-        if (err instanceof Error && err.message.startsWith("The site returned")) {
+        // Re-throw bot-protection errors so the caller can handle them
+        if (err instanceof Error && err.message.startsWith("BOT_PROTECTION:")) {
           throw err;
         }
         // Skip individual unreachable pages silently
@@ -100,4 +98,22 @@ export async function crawl(
   }
 
   return result;
+}
+
+export async function crawl(
+  startUrl: string,
+  maxPages: number,
+  maxDepth?: number
+): Promise<{ urls: CrawledUrl[]; headless: boolean }> {
+  try {
+    const urls = await runCrawl(startUrl, maxPages, maxDepth, true);
+    return { urls, headless: true };
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("BOT_PROTECTION:")) {
+      // Retry with a visible browser — bypasses most bot protection (Cloudflare etc.)
+      const urls = await runCrawl(startUrl, maxPages, maxDepth, false);
+      return { urls, headless: false };
+    }
+    throw err;
+  }
 }

@@ -5,9 +5,10 @@ import type { RawPageResult } from "./types";
 
 export async function scanPages(
   urls: string[],
-  onProgress: (result: RawPageResult) => void
+  onProgress: (result: RawPageResult) => void,
+  headless = true
 ): Promise<RawPageResult[]> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless });
   const queue = new PQueue({ concurrency: 3 });
   const results: RawPageResult[] = [];
 

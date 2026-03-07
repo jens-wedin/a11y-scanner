@@ -36,11 +36,12 @@ export async function POST(request: NextRequest) {
       progress: { scannedCount: 0, totalCount: 0 },
     });
 
-    const urls = await crawl(targetUrl, maxPages, maxDepth);
+    const { urls, headless } = await crawl(targetUrl, maxPages, maxDepth);
 
     updateJob(scanId, {
       status: "pending",
       crawledUrls: urls,
+      headless,
       progress: { scannedCount: 0, totalCount: urls.length },
     });
 

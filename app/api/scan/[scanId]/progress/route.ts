@@ -107,7 +107,7 @@ async function runScan(scanId: string): Promise<void> {
       scannedCount,
       totalCount: urls.length,
     });
-  });
+  }, job.headless ?? true);
 
   // Phase 2: analyse with Claude
   sendEvent(scanId, { type: "analysis-start" });

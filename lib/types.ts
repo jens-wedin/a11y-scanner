@@ -92,6 +92,7 @@ export interface ScanJob {
   crawledUrls?: CrawledUrl[];
   report?: ScanReport;
   error?: string;
+  headless?: boolean; // false when the site required a visible browser (bot protection bypass)
 }
 
 // SSE events streamed to client
