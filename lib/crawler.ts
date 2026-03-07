@@ -53,7 +53,18 @@ export async function crawl(
           waitUntil: "domcontentloaded",
           timeout: 15000,
         });
-        if (!response || !response.ok()) continue;
+
+        if (!response || !response.ok()) {
+          // If the very first URL (start URL) is blocked, surface a clear error
+          if (result.length === 0 && visited.size === 1) {
+            const status = response?.status() ?? 0;
+            throw new Error(
+              `The site returned ${status} — it may be blocking automated scanning (bot protection). ` +
+              `Try disabling bot protection (e.g. Cloudflare) for the scan, or test a different URL.`
+            );
+          }
+          continue;
+        }
 
         const title = await page.title();
         result.push({ url, title, depth });
@@ -76,8 +87,12 @@ export async function crawl(
             }
           }
         }
-      } catch {
-        // Skip unreachable pages silently
+      } catch (err) {
+        // Re-throw errors that should abort the crawl (e.g. bot protection on start URL)
+        if (err instanceof Error && err.message.startsWith("The site returned")) {
+          throw err;
+        }
+        // Skip individual unreachable pages silently
       }
     }
   } finally {
