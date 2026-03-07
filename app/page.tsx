@@ -8,11 +8,26 @@ import type { ScanConfig, CrawledUrl } from "@/lib/types";
 export default function HomePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [crawlStatus, setCrawlStatus] = useState("");
   const [error, setError] = useState("");
 
   async function handleStart(config: ScanConfig) {
     setLoading(true);
     setError("");
+    setCrawlStatus("Launching browser and discovering pages…");
+
+    // Cycle through status messages so it doesn't look frozen
+    const messages = [
+      "Launching browser and discovering pages…",
+      "Following internal links…",
+      "Still crawling — large sites can take up to a minute…",
+      "Almost there, collecting the last pages…",
+    ];
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+      msgIdx = Math.min(msgIdx + 1, messages.length - 1);
+      setCrawlStatus(messages[msgIdx]);
+    }, 8000);
 
     try {
       const res = await fetch("/api/crawl", {
@@ -32,11 +47,14 @@ export default function HomePage() {
       };
 
       // Store discovered URLs in sessionStorage so the preview page can read them
+      clearInterval(msgInterval);
       sessionStorage.setItem(`crawl-${scanId}`, JSON.stringify(urls));
       router.push(`/crawl/${scanId}`);
     } catch (err) {
+      clearInterval(msgInterval);
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
+      setCrawlStatus("");
     }
   }
 
@@ -57,6 +75,24 @@ export default function HomePage() {
             className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700"
           >
             {error}
+          </div>
+        )}
+
+        {loading && crawlStatus && (
+          <div
+            aria-live="polite"
+            className="mb-4 rounded-lg bg-indigo-50 border border-indigo-200 p-3 flex items-center gap-3"
+          >
+            <svg
+              className="animate-spin h-4 w-4 text-indigo-600 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="text-sm text-indigo-700">{crawlStatus}</p>
           </div>
         )}
 
