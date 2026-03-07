@@ -8,15 +8,31 @@ export async function scanPages(
   onProgress: (result: RawPageResult) => void,
   headless = true
 ): Promise<RawPageResult[]> {
-  const browser = await chromium.launch({ headless });
-  const queue = new PQueue({ concurrency: 3 });
+  const browser = await chromium.launch({
+    headless,
+    args: ["--disable-blink-features=AutomationControlled"],
+  });
+  // Reduce concurrency to 1 when using a visible browser to avoid opening
+  // multiple Chrome windows simultaneously
+  const queue = new PQueue({ concurrency: headless ? 3 : 1 });
   const results: RawPageResult[] = [];
 
   try {
     await Promise.all(
       urls.map((url) =>
         queue.add(async () => {
-          const context = await browser.newContext();
+          const context = await browser.newContext({
+            userAgent:
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            viewport: { width: 1280, height: 720 },
+            locale: "en-US",
+            extraHTTPHeaders: { "Accept-Language": "en-US,en;q=0.9" },
+          });
+          await context.addInitScript(() => {
+            Object.defineProperty(navigator, "webdriver", {
+              get: () => undefined,
+            });
+          });
           const page = await context.newPage();
           try {
             await page.goto(url, {

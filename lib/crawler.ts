@@ -36,8 +36,20 @@ async function runCrawl(
     { url: normalizeUrl(startUrl), depth: 0 },
   ];
 
-  const browser = await chromium.launch({ headless });
-  const context = await browser.newContext();
+  const browser = await chromium.launch({
+    headless,
+    args: ["--disable-blink-features=AutomationControlled"],
+  });
+  const context = await browser.newContext({
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    viewport: { width: 1280, height: 720 },
+    locale: "en-US",
+    extraHTTPHeaders: { "Accept-Language": "en-US,en;q=0.9" },
+  });
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+  });
   const page = await context.newPage();
 
   try {
