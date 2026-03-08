@@ -53,7 +53,7 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6" aria-label="Scan configuration">
       <div>
-        <label htmlFor="targetUrl" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="targetUrl" className="block text-sm font-medium text-foreground mb-1">
           Website URL
         </label>
         <Input
@@ -67,14 +67,14 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
           aria-invalid={urlError ? true : undefined}
         />
         {urlError && (
-          <p id="url-error" role="alert" className="mt-1 text-sm text-red-600">
+          <p id="url-error" role="alert" className="mt-1 text-sm text-red-600 dark:text-red-400">
             {urlError}
           </p>
         )}
       </div>
 
       <fieldset>
-        <legend className="block text-sm font-medium text-gray-700 mb-2">
+        <legend className="block text-sm font-medium text-foreground mb-2">
           Max pages to scan
         </legend>
         <RadioGroup
@@ -94,7 +94,7 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
       </fieldset>
 
       <div>
-        <label htmlFor="maxDepth" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="maxDepth" className="block text-sm font-medium text-foreground mb-1">
           Crawl depth
         </label>
         <Select

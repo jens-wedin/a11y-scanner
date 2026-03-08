@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { UrlPreviewList } from "@/components/UrlPreviewList";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { CrawledUrl, ScanConfig } from "@/lib/types";
 
 interface StoredCrawl {
@@ -58,31 +59,34 @@ export default function CrawlPreviewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">
-          Discovered pages
-        </h1>
-        <p className="text-sm text-gray-500 mb-6">
+    <main className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="w-full max-w-2xl bg-card rounded-2xl shadow-sm border border-border p-8">
+        <div className="flex items-start justify-between mb-1">
+          <h1 className="text-xl font-bold text-foreground">
+            Discovered pages
+          </h1>
+          <ThemeToggle />
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">
           Select which pages to include in your accessibility scan.
         </p>
 
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700"
+            className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400"
           >
             {error}
           </div>
         )}
 
         {!hydrated ? (
-          <p className="text-sm text-gray-500">Loading discovered pages…</p>
+          <p className="text-sm text-muted-foreground">Loading discovered pages…</p>
         ) : urls.length > 0 ? (
           <UrlPreviewList urls={urls} onStart={handleStart} loading={loading} />
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               No pages were discovered. The crawl may have timed out or the site may be blocking automated access.
             </p>
             <Button

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { ReportSummary } from "@/components/ReportSummary";
 import { FilterBar } from "@/components/FilterBar";
 import { IssueCard } from "@/components/IssueCard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { ScanReport, ReportFilters } from "@/lib/types";
 
 const DEFAULT_FILTERS: ReportFilters = {
@@ -60,16 +61,16 @@ export default function ReportPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <main className="min-h-screen bg-background flex items-center justify-center p-6">
         <div
           role="alert"
-          className="bg-white rounded-2xl border border-red-200 p-8 text-red-700 max-w-md text-center"
+          className="bg-card rounded-2xl border border-red-200 dark:border-red-900 p-8 text-red-700 dark:text-red-400 max-w-md text-center"
         >
           <p className="font-semibold mb-2">Report not available</p>
           <p className="text-sm">{error}</p>
           <a
             href="/"
-            className="mt-4 inline-block text-sm text-indigo-600 hover:underline"
+            className="mt-4 inline-block text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
           >
             ← Start a new scan
           </a>
@@ -80,40 +81,41 @@ export default function ReportPage() {
 
   if (!report) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <p className="text-gray-500">Loading report…</p>
+      <main className="min-h-screen bg-background flex items-center justify-center p-6">
+        <p className="text-muted-foreground">Loading report…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-6">
+    <main className="min-h-screen bg-background py-10 px-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <a
               href="/"
-              className="text-xs text-indigo-600 hover:underline mb-2 inline-block"
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mb-2 inline-block"
               aria-label="Start a new scan"
             >
               ← New scan
             </a>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               Accessibility Report
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {report.targetUrl} ·{" "}
               {new Date(report.completedAt).toLocaleDateString("en-GB", {
                 dateStyle: "long",
               })}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <a
               href={`/api/scan/${scanId}/export/json`}
               download
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
             >
               Export JSON
             </a>
@@ -128,12 +130,12 @@ export default function ReportPage() {
         </div>
 
         {/* Summary card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
           <ReportSummary report={report} />
         </div>
 
         {/* Filter + issue list */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-6 space-y-4">
           <FilterBar
             filters={filters}
             onChange={setFilters}
@@ -142,7 +144,7 @@ export default function ReportPage() {
           />
 
           {filteredIssues.length === 0 ? (
-            <p className="text-sm text-gray-500 py-6 text-center">
+            <p className="text-sm text-muted-foreground py-6 text-center">
               No issues match the current filters.
             </p>
           ) : (

@@ -37,8 +37,8 @@ export function UrlPreviewList({ urls, onStart, loading }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          <strong>{selected.size}</strong> of <strong>{urls.length}</strong> pages selected
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-foreground">{selected.size}</strong> of <strong className="text-foreground">{urls.length}</strong> pages selected
         </p>
         <Button
           type="button"
@@ -52,14 +52,14 @@ export function UrlPreviewList({ urls, onStart, loading }: Props) {
       </div>
 
       <ul
-        className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100"
+        className="max-h-80 overflow-y-auto border border-border rounded-lg divide-y divide-border"
         aria-label="Discovered URLs"
       >
         {urls.map((crawledUrl) => {
           const checkId = `url-${encodeURIComponent(crawledUrl.url)}`;
           return (
             <li key={crawledUrl.url}>
-              <div className="flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50">
+              <div className="flex items-start gap-3 px-4 py-2.5 hover:bg-muted">
                 <Checkbox
                   id={checkId}
                   checked={selected.has(crawledUrl.url)}
@@ -68,12 +68,12 @@ export function UrlPreviewList({ urls, onStart, loading }: Props) {
                   aria-label={`Include ${crawledUrl.url}`}
                 />
                 <label htmlFor={checkId} className="min-w-0 cursor-pointer flex-1">
-                  <span className="block text-sm text-gray-900 truncate">{crawledUrl.url}</span>
+                  <span className="block text-sm text-foreground truncate">{crawledUrl.url}</span>
                   {crawledUrl.title && (
-                    <span className="text-xs text-gray-500">{crawledUrl.title}</span>
+                    <span className="text-xs text-muted-foreground">{crawledUrl.title}</span>
                   )}
                 </label>
-                <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">
+                <span className="text-xs text-muted-foreground flex-shrink-0 mt-0.5">
                   depth {crawledUrl.depth}
                 </span>
               </div>

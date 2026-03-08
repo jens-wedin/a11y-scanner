@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] — 2026-03-09
+
+### Added
+
+- **Dark / light mode:** System-aware theme switching via `next-themes`; Sun/Moon toggle button in every page header persists preference across sessions
+- **Smooth theme transitions:** 200 ms ease on background and border colours, 150 ms on text — no jarring flash on toggle
+
+### Fixed
+
+- **Font not loading:** Host Grotesk CSS variable was set on `<body>` but consumed by `<html>`; moved font classes to `<html>` so `var(--font-sans)` resolves correctly
+
 ## [0.3.0] — 2026-03-08
 
 ### Added

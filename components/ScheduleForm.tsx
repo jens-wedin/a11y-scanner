@@ -67,14 +67,14 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
       {error && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700"
+          className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400"
         >
           {error}
         </div>
       )}
 
       <div>
-        <label htmlFor="sched-name" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="sched-name" className="block text-sm font-medium text-foreground mb-1">
           Schedule name <span aria-hidden="true">*</span>
         </label>
         <Input
@@ -87,7 +87,7 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
       </div>
 
       <div>
-        <label htmlFor="sched-url" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="sched-url" className="block text-sm font-medium text-foreground mb-1">
           URL to scan <span aria-hidden="true">*</span>
         </label>
         <Input
@@ -102,15 +102,15 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
 
       {/* Frequency — keeps sr-only native radio pattern for reliable accessible card-buttons */}
       <fieldset>
-        <legend className="block text-sm font-medium text-gray-700 mb-2">Frequency</legend>
+        <legend className="block text-sm font-medium text-foreground mb-2">Frequency</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(["daily", "weekly", "monthly", "custom"] as Frequency[]).map((f) => (
             <label
               key={f}
               className={`flex items-center justify-center rounded-lg border px-3 py-2 text-sm cursor-pointer transition-colors ${
                 frequency === f
-                  ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-medium"
-                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  ? "border-indigo-600 bg-indigo-50 text-indigo-700 font-medium dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-700"
+                  : "border-border text-muted-foreground hover:border-border/80"
               }`}
             >
               <input
@@ -129,7 +129,7 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
 
       {frequency !== "custom" ? (
         <div>
-          <label htmlFor="sched-time" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="sched-time" className="block text-sm font-medium text-foreground mb-1">
             Run at
           </label>
           <Input
@@ -142,7 +142,7 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
         </div>
       ) : (
         <div>
-          <label htmlFor="sched-cron" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="sched-cron" className="block text-sm font-medium text-foreground mb-1">
             Cron expression
           </label>
           <Input
@@ -153,12 +153,12 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
             placeholder="0 9 * * 1"
             className="font-mono"
           />
-          <p className="mt-1 text-xs text-gray-400">minute hour day month weekday</p>
+          <p className="mt-1 text-xs text-muted-foreground">minute hour day month weekday</p>
         </div>
       )}
 
       <fieldset>
-        <legend className="block text-sm font-medium text-gray-700 mb-2">Max pages</legend>
+        <legend className="block text-sm font-medium text-foreground mb-2">Max pages</legend>
         <RadioGroup
           value={String(maxPages)}
           onValueChange={(v) => setMaxPages(Number(v) as 10 | 50 | 100 | 200)}
@@ -169,7 +169,7 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
               <RadioGroupItem value={String(n)} id={`sched-maxPages-${n}`} />
               <label
                 htmlFor={`sched-maxPages-${n}`}
-                className="text-sm text-gray-700 cursor-pointer"
+                className="text-sm text-foreground cursor-pointer"
               >
                 {n}
               </label>
@@ -179,7 +179,7 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
       </fieldset>
 
       <div>
-        <label htmlFor="sched-depth" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="sched-depth" className="block text-sm font-medium text-foreground mb-1">
           Max crawl depth
         </label>
         <Select value={maxDepth} onValueChange={(v) => v !== null && setMaxDepth(v)}>
@@ -196,9 +196,9 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
       </div>
 
       <div>
-        <label htmlFor="sched-email" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="sched-email" className="block text-sm font-medium text-foreground mb-1">
           Notification email{" "}
-          <span className="text-gray-400 font-normal">(optional)</span>
+          <span className="text-muted-foreground font-normal">(optional)</span>
         </label>
         <Input
           id="sched-email"

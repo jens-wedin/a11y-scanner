@@ -50,7 +50,7 @@ export function ScanProgressView({ scanId }: Props) {
 
     es.onerror = () => {
       setPhase("error");
-      setError("Connection to server lost. The scan may still be running \u2014 try refreshing.");
+      setError("Connection to server lost. The scan may still be running — try refreshing.");
       es.close();
     };
 
@@ -77,11 +77,11 @@ export function ScanProgressView({ scanId }: Props) {
               <span
                 aria-current={isActive ? "step" : undefined}
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                  ${isDone ? "bg-green-500 text-white" : isActive ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-500"}`}
+                  ${isDone ? "bg-green-500 text-white" : isActive ? "bg-indigo-600 text-white" : "bg-muted text-muted-foreground"}`}
               >
-                {isDone ? "\u2713" : idx + 1}
+                {isDone ? "✓" : idx + 1}
               </span>
-              <span className={`text-sm ${isActive ? "font-medium text-gray-900" : "text-gray-500"}`}>
+              <span className={`text-sm ${isActive ? "font-medium text-foreground" : "text-muted-foreground"}`}>
                 {label}
               </span>
             </li>
@@ -94,7 +94,7 @@ export function ScanProgressView({ scanId }: Props) {
         <div>
           {total > 0 && (
             <>
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
+              <div className="flex justify-between text-sm text-muted-foreground mb-1">
                 <span>{scanned} / {total} pages</span>
                 <span>{progress}%</span>
               </div>
@@ -102,39 +102,39 @@ export function ScanProgressView({ scanId }: Props) {
             </>
           )}
           {current && (
-            <p className="mt-2 text-xs text-gray-500 truncate" aria-label="Currently scanning">
+            <p className="mt-2 text-xs text-muted-foreground truncate" aria-label="Currently scanning">
               Scanning: {current}
             </p>
           )}
           {violationsFound > 0 && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               {violationsFound} violations found so far
             </p>
           )}
           {total === 0 && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <svg className="animate-spin h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <svg className="animate-spin h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <span>Waiting for scan to start\u2026</span>
+              <span>Waiting for scan to start…</span>
             </div>
           )}
         </div>
       )}
 
       {phase === "analyzing" && (
-        <div className="flex items-center gap-3 text-sm text-gray-600">
-          <svg className="animate-spin h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <svg className="animate-spin h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" aria-hidden="true">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <span>Analysing violations with Claude AI\u2026</span>
+          <span>Analysing violations with Claude AI…</span>
         </div>
       )}
 
       {phase === "error" && (
-        <div role="alert" className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+        <div role="alert" className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400">
           <strong>Scan error:</strong> {error}
         </div>
       )}

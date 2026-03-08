@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ScanConfigForm } from "@/components/ScanConfigForm";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ScanConfig, CrawledUrl } from "@/lib/types";
@@ -67,17 +68,18 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <div className="flex justify-end mb-4">
+    <main className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="w-full max-w-lg bg-card rounded-2xl shadow-sm border border-border p-8">
+        <div className="flex justify-end items-center gap-2 mb-4">
+          <ThemeToggle />
           <Link href="/schedules" className={cn(buttonVariants({ variant: "link" }), "p-0 h-auto text-sm")}>
             Schedules →
           </Link>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
           Accessibility Scanner
         </h1>
-        <p className="text-sm text-gray-500 mb-8">
+        <p className="text-sm text-muted-foreground mb-8">
           Crawl a website and get an AI-powered accessibility audit with WCAG
           and EAA compliance insights.
         </p>
@@ -85,7 +87,7 @@ export default function HomePage() {
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700"
+            className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400"
           >
             {error}
           </div>
@@ -94,10 +96,10 @@ export default function HomePage() {
         {loading && crawlStatus && (
           <div
             aria-live="polite"
-            className="mb-4 rounded-lg bg-indigo-50 border border-indigo-200 p-3 flex items-center gap-3"
+            className="mb-4 rounded-lg bg-indigo-50 border border-indigo-200 p-3 flex items-center gap-3 dark:bg-indigo-950/30 dark:border-indigo-900"
           >
             <svg
-              className="animate-spin h-4 w-4 text-indigo-600 flex-shrink-0"
+              className="animate-spin h-4 w-4 text-indigo-600 flex-shrink-0 dark:text-indigo-400"
               fill="none"
               viewBox="0 0 24 24"
               aria-hidden="true"
@@ -105,7 +107,7 @@ export default function HomePage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <p className="text-sm text-indigo-700">{crawlStatus}</p>
+            <p className="text-sm text-indigo-700 dark:text-indigo-400">{crawlStatus}</p>
           </div>
         )}
 

@@ -16,16 +16,16 @@ interface Props {
 }
 
 const SEVERITY_STYLES: Record<A11yIssue["severity"], string> = {
-  critical: "bg-red-100 text-red-800 border-red-200 hover:bg-red-100",
-  serious: "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100",
-  moderate: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100",
-  minor: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100",
+  critical: "bg-red-100 text-red-800 border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/30",
+  serious: "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800 dark:hover:bg-orange-900/30",
+  moderate: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800 dark:hover:bg-yellow-900/30",
+  minor: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/30",
 };
 
 const EAA_STYLES: Record<A11yIssue["eaaRisk"], string> = {
-  high: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50",
-  medium: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
-  low: "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-50",
+  high: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-950/30",
+  medium: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900 dark:hover:bg-amber-950/30",
+  low: "bg-muted text-muted-foreground border-border hover:bg-muted",
 };
 
 export function IssueCard({ issue }: Props) {
@@ -34,7 +34,7 @@ export function IssueCard({ issue }: Props) {
   const detailsId = `${cardId}-details`;
 
   return (
-    <article aria-labelledby={cardId} className="border border-gray-200 rounded-xl overflow-hidden">
+    <article aria-labelledby={cardId} className="border border-border rounded-xl overflow-hidden">
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <div className="p-4 space-y-3">
           {/* Badges */}
@@ -42,35 +42,35 @@ export function IssueCard({ issue }: Props) {
             <Badge variant="outline" className={SEVERITY_STYLES[issue.severity]}>
               {issue.severity.toUpperCase()}
             </Badge>
-            <Badge variant="outline" className="text-gray-600">
+            <Badge variant="outline" className="text-muted-foreground">
               WCAG {issue.wcagLevel}
             </Badge>
             <Badge variant="outline" className={EAA_STYLES[issue.eaaRisk]}>
               EAA {issue.eaaRisk} risk
             </Badge>
-            <Badge variant="outline" className="text-gray-600">
+            <Badge variant="outline" className="text-muted-foreground">
               {issue.fixComplexity} effort
             </Badge>
           </div>
 
           {/* Title + description */}
           <div>
-            <h3 id={cardId} className="text-base font-semibold text-gray-900">
+            <h3 id={cardId} className="text-base font-semibold text-foreground">
               {issue.title}
             </h3>
-            <p className="text-sm text-gray-600 mt-1">{issue.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{issue.description}</p>
           </div>
 
           {/* Meta */}
-          <dl className="flex flex-wrap gap-4 text-sm text-gray-500">
+          <dl className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <div>
-              <dt className="inline font-medium text-gray-700">WCAG: </dt>
+              <dt className="inline font-medium text-foreground">WCAG: </dt>
               <dd className="inline">
                 <a
                   href={issue.wcagDocUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline"
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline"
                   aria-label={`WCAG criterion ${issue.wcagCriterion} (opens in new tab)`}
                 >
                   {issue.wcagCriterion}
@@ -78,11 +78,11 @@ export function IssueCard({ issue }: Props) {
               </dd>
             </div>
             <div>
-              <dt className="inline font-medium text-gray-700">Impact: </dt>
+              <dt className="inline font-medium text-foreground">Impact: </dt>
               <dd className="inline">{issue.businessImpact}</dd>
             </div>
             <div>
-              <dt className="inline font-medium text-gray-700">Pages: </dt>
+              <dt className="inline font-medium text-foreground">Pages: </dt>
               <dd className="inline">
                 {issue.affectedPages.length} ({issue.occurrenceCount} occurrences)
               </dd>
@@ -91,7 +91,7 @@ export function IssueCard({ issue }: Props) {
 
           {/* Toggle */}
           <CollapsibleTrigger
-            className={cn(buttonVariants({ variant: "link" }), "p-0 h-auto text-sm text-indigo-600")}
+            className={cn(buttonVariants({ variant: "link" }), "p-0 h-auto text-sm text-indigo-600 dark:text-indigo-400")}
             aria-controls={detailsId}
           >
             {expanded ? "Hide details ↑" : "View details ↓"}
@@ -102,31 +102,31 @@ export function IssueCard({ issue }: Props) {
         <CollapsibleContent>
           <div
             id={detailsId}
-            className="border-t border-gray-200 bg-gray-50 p-4 space-y-4"
+            className="border-t border-border bg-muted p-4 space-y-4"
           >
             <div>
-              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
+              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-1">
                 Code violation
               </h4>
-              <pre className="text-xs text-gray-900 bg-red-50 border border-red-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words">
+              <pre className="text-xs text-foreground bg-red-50 border border-red-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words dark:bg-red-950/20 dark:border-red-900">
                 <code>{issue.codeExample}</code>
               </pre>
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
+              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-1">
                 Recommended fix
               </h4>
-              <pre className="text-xs text-gray-900 bg-green-50 border border-green-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words">
+              <pre className="text-xs text-foreground bg-green-50 border border-green-100 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words dark:bg-green-950/20 dark:border-green-900">
                 <code>{issue.recommendedFix}</code>
               </pre>
             </div>
             {issue.affectedPages.length > 1 && (
               <div>
-                <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">
+                <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-1">
                   Affected pages
                 </h4>
                 <ul
-                  className="text-xs text-gray-600 space-y-1 max-h-32 overflow-y-auto"
+                  className="text-xs text-muted-foreground space-y-1 max-h-32 overflow-y-auto"
                   aria-label="Affected pages"
                 >
                   {issue.affectedPages.map((url) => (
@@ -135,7 +135,7 @@ export function IssueCard({ issue }: Props) {
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-indigo-600 hover:underline truncate block"
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline truncate block"
                       >
                         {url}
                       </a>

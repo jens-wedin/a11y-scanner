@@ -96,7 +96,7 @@ export function FilterBar({ filters, onChange, total, filtered }: Props) {
         </div>
       </div>
 
-      <p className="text-xs text-gray-500" aria-live="polite" aria-atomic="true">
+      <p className="text-xs text-muted-foreground" aria-live="polite" aria-atomic="true">
         Showing {filtered} of {total} issues
       </p>
     </div>

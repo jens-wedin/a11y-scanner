@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Schedule } from "@/lib/types";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -26,7 +27,7 @@ function frequencyLabel(cronExpr: string): string {
 function Spinner() {
   return (
     <svg
-      className="inline-block h-4 w-4 animate-spin text-indigo-500"
+      className="inline-block h-4 w-4 animate-spin text-indigo-500 dark:text-indigo-400"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
@@ -92,32 +93,35 @@ export default function SchedulesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <Link href="/" className={cn(buttonVariants({ variant: "link" }), "p-0 h-auto text-sm")}>
               ← Back
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 mt-1">Schedules</h1>
-            <p className="text-sm text-gray-500">Recurring accessibility scans</p>
+            <h1 className="text-2xl font-bold text-foreground mt-1">Schedules</h1>
+            <p className="text-sm text-muted-foreground">Recurring accessibility scans</p>
           </div>
-          <Link href="/schedules/new" className={buttonVariants()}>
-            New schedule
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/schedules/new" className={buttonVariants()}>
+              New schedule
+            </Link>
+          </div>
         </div>
 
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <p className="text-sm text-muted-foreground">Loading…</p>
         ) : schedules.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center">
-            <p className="text-gray-500 mb-4">No schedules yet.</p>
+          <div className="rounded-2xl border border-border bg-card p-12 text-center">
+            <p className="text-muted-foreground mb-4">No schedules yet.</p>
             <Link href="/schedules/new" className={cn(buttonVariants({ variant: "link" }), "text-sm")}>
               Create your first schedule →
             </Link>
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -130,39 +134,39 @@ export default function SchedulesPage() {
               </TableHeader>
               <TableBody>
                 {schedules.map((s) => (
-                  <TableRow key={s.id} className={s.runningAt ? "bg-indigo-50/40" : ""}>
+                  <TableRow key={s.id} className={s.runningAt ? "bg-indigo-50/40 dark:bg-indigo-950/20" : ""}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {s.runningAt && <Spinner />}
                         <div>
-                          <p className="font-medium text-gray-900">{s.name}</p>
-                          <p className="text-gray-400 text-xs truncate max-w-xs">
+                          <p className="font-medium text-foreground">{s.name}</p>
+                          <p className="text-muted-foreground text-xs truncate max-w-xs">
                             {s.config.targetUrl}
                           </p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-gray-600">
+                    <TableCell className="text-muted-foreground">
                       {frequencyLabel(s.cronExpression)}
                     </TableCell>
                     <TableCell>
                       {s.runningAt ? (
-                        <span className="inline-flex items-center gap-1.5 text-indigo-600 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
                           <Spinner />
                           Running…
                         </span>
                       ) : s.lastRunAt ? (
                         <div>
-                          <p className="text-gray-600">
+                          <p className="text-muted-foreground">
                             {new Date(s.lastRunAt).toLocaleDateString()}
                           </p>
                           {s.lastRunSummary && (
                             <p className="text-xs mt-0.5 flex items-center gap-1">
-                              <span className="text-gray-500">
+                              <span className="text-muted-foreground">
                                 {s.lastRunSummary.totalIssues} issues
                               </span>
                               {s.lastRunSummary.criticalCount > 0 && (
-                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-xs">
+                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/30 text-xs">
                                   {s.lastRunSummary.criticalCount} critical
                                 </Badge>
                               )}
@@ -171,14 +175,14 @@ export default function SchedulesPage() {
                           {s.lastScanId && (
                             <Link
                               href={`/scan/${s.lastScanId}`}
-                              className="text-xs text-indigo-600 underline"
+                              className="text-xs text-indigo-600 dark:text-indigo-400 underline"
                             >
                               View report
                             </Link>
                           )}
                         </div>
                       ) : (
-                        <span className="text-gray-400">Never</span>
+                        <span className="text-muted-foreground">Never</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -202,7 +206,7 @@ export default function SchedulesPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(s.id, s.name)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
                           aria-label={`Delete schedule ${s.name}`}
                         >
                           Delete
