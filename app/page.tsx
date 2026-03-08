@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ScanConfigForm } from "@/components/ScanConfigForm";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { ScanConfig, CrawledUrl } from "@/lib/types";
 
 export default function HomePage() {
@@ -68,7 +70,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <div className="flex justify-end mb-4">
-          <Link href="/schedules" className="text-sm text-indigo-600 hover:underline">
+          <Link href="/schedules" className={cn(buttonVariants({ variant: "link" }), "p-0 h-auto text-sm")}>
             Schedules →
           </Link>
         </div>

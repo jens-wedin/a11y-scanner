@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ScheduleForm, type ScheduleFormData } from "@/components/ScheduleForm";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function NewSchedulePage() {
   const router = useRouter();
@@ -34,7 +36,7 @@ export default function NewSchedulePage() {
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
         <div className="mb-6">
-          <Link href="/schedules" className="text-sm text-indigo-600 hover:underline">
+          <Link href="/schedules" className={cn(buttonVariants({ variant: "link" }), "p-0 h-auto text-sm")}>
             ← Back to schedules
           </Link>
           <h1 className="text-xl font-bold text-gray-900 mt-2">New schedule</h1>

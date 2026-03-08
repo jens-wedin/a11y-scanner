@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import type { ScanConfig } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
   onSubmit: (config: ScanConfig) => void;
@@ -10,10 +20,10 @@ interface Props {
 
 const MAX_PAGES_OPTIONS = [10, 50, 100, 200];
 const DEPTH_OPTIONS = [
-  { label: "Unlimited", value: undefined },
-  { label: "1 level deep", value: 1 },
-  { label: "2 levels deep", value: 2 },
-  { label: "3 levels deep", value: 3 },
+  { label: "Unlimited", value: "" },
+  { label: "1 level deep", value: "1" },
+  { label: "2 levels deep", value: "2" },
+  { label: "3 levels deep", value: "3" },
 ];
 
 export function ScanConfigForm({ onSubmit, loading }: Props) {
@@ -46,14 +56,13 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
         <label htmlFor="targetUrl" className="block text-sm font-medium text-gray-700 mb-1">
           Website URL
         </label>
-        <input
+        <Input
           id="targetUrl"
           type="url"
           value={targetUrl}
           onChange={(e) => setTargetUrl(e.target.value)}
           placeholder="https://example.com"
           required
-          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           aria-describedby={urlError ? "url-error" : undefined}
           aria-invalid={urlError ? true : undefined}
         />
@@ -68,51 +77,51 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
         <legend className="block text-sm font-medium text-gray-700 mb-2">
           Max pages to scan
         </legend>
-        <div className="flex gap-3">
+        <RadioGroup
+          value={String(maxPages)}
+          onValueChange={(v) => setMaxPages(Number(v) as 10 | 50 | 100 | 200)}
+          className="flex gap-4"
+        >
           {MAX_PAGES_OPTIONS.map((n) => (
-            <label key={n} className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="radio"
-                name="maxPages"
-                value={n}
-                checked={maxPages === n}
-                onChange={() => setMaxPages(n)}
-                className="accent-indigo-600"
-              />
-              <span className="text-sm">{n}</span>
-            </label>
+            <div key={n} className="flex items-center gap-1.5">
+              <RadioGroupItem value={String(n)} id={`maxPages-${n}`} />
+              <label htmlFor={`maxPages-${n}`} className="text-sm cursor-pointer">
+                {n}
+              </label>
+            </div>
           ))}
-        </div>
+        </RadioGroup>
       </fieldset>
 
       <div>
         <label htmlFor="maxDepth" className="block text-sm font-medium text-gray-700 mb-1">
           Crawl depth
         </label>
-        <select
-          id="maxDepth"
-          value={maxDepth ?? ""}
-          onChange={(e) =>
-            setMaxDepth(e.target.value === "" ? undefined : Number(e.target.value))
-          }
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        <Select
+          value={maxDepth !== undefined ? String(maxDepth) : ""}
+          onValueChange={(v) => { if (v !== null) setMaxDepth(v === "" ? undefined : Number(v)); }}
         >
-          {DEPTH_OPTIONS.map(({ label, value }) => (
-            <option key={label} value={value ?? ""}>
-              {label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="maxDepth" className="w-auto">
+            <SelectValue placeholder="Unlimited" />
+          </SelectTrigger>
+          <SelectContent>
+            {DEPTH_OPTIONS.map(({ label, value }) => (
+              <SelectItem key={label} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         aria-busy={loading}
+        className="w-full"
       >
-        {loading ? "Discovering URLs\u2026" : "Discover URLs \u2192"}
-      </button>
+        {loading ? "Discovering URLs…" : "Discover URLs →"}
+      </Button>
     </form>
   );
 }

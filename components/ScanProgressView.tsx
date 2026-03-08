@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ScanEvent } from "@/lib/types";
+import { Progress } from "@/components/ui/progress";
 
 interface Props {
   scanId: string;
@@ -97,19 +98,7 @@ export function ScanProgressView({ scanId }: Props) {
                 <span>{scanned} / {total} pages</span>
                 <span>{progress}%</span>
               </div>
-              <div
-                role="progressbar"
-                aria-valuenow={progress}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Scan progress"
-                className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden"
-              >
-                <div
-                  className="h-full bg-indigo-600 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+              <Progress value={progress} aria-label="Scan progress" className="h-2.5" />
             </>
           )}
           {current && (

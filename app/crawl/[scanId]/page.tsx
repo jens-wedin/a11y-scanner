@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { UrlPreviewList } from "@/components/UrlPreviewList";
+import { Button } from "@/components/ui/button";
 import type { CrawledUrl, ScanConfig } from "@/lib/types";
 
 interface StoredCrawl {
@@ -84,12 +85,13 @@ export default function CrawlPreviewPage() {
             <p className="text-sm text-gray-500">
               No pages were discovered. The crawl may have timed out or the site may be blocking automated access.
             </p>
-            <button
+            <Button
+              variant="link"
               onClick={() => router.push("/")}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 underline"
+              className="p-0 h-auto"
             >
               ← Go back and try again
-            </button>
+            </Button>
           </div>
         )}
       </div>

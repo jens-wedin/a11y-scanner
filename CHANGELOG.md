@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] — 2026-03-08
+
+### Added
+
+- **Running indicator:** Spinning icon and tinted row on the Schedules page while a scan is in progress; page polls every 3 s and clears automatically when the scan finishes (`runningAt` timestamp on the Schedule record)
+- **shadcn/ui component library:** All hand-rolled Tailwind UI elements replaced with shadcn/ui primitives (`Button`, `Input`, `Select`, `RadioGroup`, `Checkbox`, `Progress`, `Switch`, `Table`, `Badge`, `Collapsible`, `Separator`) — consistent design tokens, keyboard behaviour, and accessibility semantics across the entire app
+
+### Changed
+
+- **IssueCard:** Severity/WCAG/EAA labels now use `Badge` with colour overrides; expand/collapse section uses `Collapsible` + `CollapsibleTrigger` for reliable keyboard and screen-reader support
+- **ScanProgressView:** Custom progress bar replaced with shadcn `Progress` (renders `role="progressbar"` + `aria-valuenow` automatically)
+- **UrlPreviewList:** Native checkboxes replaced with shadcn `Checkbox`; action buttons replaced with `Button`
+- **FilterBar:** All four native `<select>` elements replaced with shadcn `Select`; search field replaced with `Input`
+- **ScanConfigForm / ScheduleForm:** All inputs, radio groups, depth selects, and submit buttons replaced with shadcn equivalents; frequency card-buttons in ScheduleForm retain the accessible sr-only native-radio pattern
+
 ## [0.2.0] — 2026-03-08
 
 ### Added

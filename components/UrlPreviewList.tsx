@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { CrawledUrl } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Props {
   urls: CrawledUrl[];
@@ -38,52 +40,57 @@ export function UrlPreviewList({ urls, onStart, loading }: Props) {
         <p className="text-sm text-gray-600">
           <strong>{selected.size}</strong> of <strong>{urls.length}</strong> pages selected
         </p>
-        <button
+        <Button
           type="button"
+          variant="link"
+          size="sm"
           onClick={toggleAll}
-          className="text-sm text-indigo-600 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
+          className="p-0 h-auto text-sm"
         >
           {allSelected ? "Deselect all" : "Select all"}
-        </button>
+        </Button>
       </div>
 
       <ul
         className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100"
         aria-label="Discovered URLs"
       >
-        {urls.map((crawledUrl) => (
-          <li key={crawledUrl.url}>
-            <label className="flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selected.has(crawledUrl.url)}
-                onChange={() => toggle(crawledUrl.url)}
-                className="mt-0.5 accent-indigo-600 flex-shrink-0"
-                aria-label={`Include ${crawledUrl.url}`}
-              />
-              <span className="min-w-0">
-                <span className="block text-sm text-gray-900 truncate">{crawledUrl.url}</span>
-                {crawledUrl.title && (
-                  <span className="text-xs text-gray-500">{crawledUrl.title}</span>
-                )}
-              </span>
-              <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">
-                depth {crawledUrl.depth}
-              </span>
-            </label>
-          </li>
-        ))}
+        {urls.map((crawledUrl) => {
+          const checkId = `url-${encodeURIComponent(crawledUrl.url)}`;
+          return (
+            <li key={crawledUrl.url}>
+              <div className="flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50">
+                <Checkbox
+                  id={checkId}
+                  checked={selected.has(crawledUrl.url)}
+                  onCheckedChange={() => toggle(crawledUrl.url)}
+                  className="mt-0.5 flex-shrink-0"
+                  aria-label={`Include ${crawledUrl.url}`}
+                />
+                <label htmlFor={checkId} className="min-w-0 cursor-pointer flex-1">
+                  <span className="block text-sm text-gray-900 truncate">{crawledUrl.url}</span>
+                  {crawledUrl.title && (
+                    <span className="text-xs text-gray-500">{crawledUrl.title}</span>
+                  )}
+                </label>
+                <span className="text-xs text-gray-400 flex-shrink-0 mt-0.5">
+                  depth {crawledUrl.depth}
+                </span>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
-      <button
+      <Button
         type="button"
         onClick={() => onStart(Array.from(selected))}
         disabled={loading || selected.size === 0}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         aria-busy={loading}
+        className="w-full"
       >
-        {loading ? "Starting scan\u2026" : `Scan ${selected.size} pages \u2192`}
-      </button>
+        {loading ? "Starting scan…" : `Scan ${selected.size} pages →`}
+      </Button>
     </div>
   );
 }

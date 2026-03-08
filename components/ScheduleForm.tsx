@@ -1,6 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Frequency = "daily" | "weekly" | "monthly" | "custom";
 
@@ -67,13 +77,12 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
         <label htmlFor="sched-name" className="block text-sm font-medium text-gray-700 mb-1">
           Schedule name <span aria-hidden="true">*</span>
         </label>
-        <input
+        <Input
           id="sched-name"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Monthly audit"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
@@ -81,17 +90,17 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
         <label htmlFor="sched-url" className="block text-sm font-medium text-gray-700 mb-1">
           URL to scan <span aria-hidden="true">*</span>
         </label>
-        <input
+        <Input
           id="sched-url"
           type="url"
           required
           value={targetUrl}
           onChange={(e) => setTargetUrl(e.target.value)}
           placeholder="https://example.com"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
+      {/* Frequency — keeps sr-only native radio pattern for reliable accessible card-buttons */}
       <fieldset>
         <legend className="block text-sm font-medium text-gray-700 mb-2">Frequency</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -123,12 +132,12 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
           <label htmlFor="sched-time" className="block text-sm font-medium text-gray-700 mb-1">
             Run at
           </label>
-          <input
+          <Input
             id="sched-time"
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-auto"
           />
         </div>
       ) : (
@@ -136,13 +145,13 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
           <label htmlFor="sched-cron" className="block text-sm font-medium text-gray-700 mb-1">
             Cron expression
           </label>
-          <input
+          <Input
             id="sched-cron"
             required={frequency === "custom"}
             value={customCron}
             onChange={(e) => setCustomCron(e.target.value)}
             placeholder="0 9 * * 1"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="font-mono"
           />
           <p className="mt-1 text-xs text-gray-400">minute hour day month weekday</p>
         </div>
@@ -150,41 +159,40 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
 
       <fieldset>
         <legend className="block text-sm font-medium text-gray-700 mb-2">Max pages</legend>
-        <div className="flex gap-4">
+        <RadioGroup
+          value={String(maxPages)}
+          onValueChange={(v) => setMaxPages(Number(v) as 10 | 50 | 100 | 200)}
+          className="flex gap-4"
+        >
           {([10, 50, 100, 200] as const).map((n) => (
-            <label
-              key={n}
-              className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
-            >
-              <input
-                type="radio"
-                name="maxPages"
-                value={n}
-                checked={maxPages === n}
-                onChange={() => setMaxPages(n)}
-                className="accent-indigo-600"
-              />
-              {n}
-            </label>
+            <div key={n} className="flex items-center gap-1.5">
+              <RadioGroupItem value={String(n)} id={`sched-maxPages-${n}`} />
+              <label
+                htmlFor={`sched-maxPages-${n}`}
+                className="text-sm text-gray-700 cursor-pointer"
+              >
+                {n}
+              </label>
+            </div>
           ))}
-        </div>
+        </RadioGroup>
       </fieldset>
 
       <div>
         <label htmlFor="sched-depth" className="block text-sm font-medium text-gray-700 mb-1">
           Max crawl depth
         </label>
-        <select
-          id="sched-depth"
-          value={maxDepth}
-          onChange={(e) => setMaxDepth(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="unlimited">Unlimited</option>
-          <option value="1">1 level</option>
-          <option value="2">2 levels</option>
-          <option value="3">3 levels</option>
-        </select>
+        <Select value={maxDepth} onValueChange={(v) => v !== null && setMaxDepth(v)}>
+          <SelectTrigger id="sched-depth" className="w-auto">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unlimited">Unlimited</SelectItem>
+            <SelectItem value="1">1 level</SelectItem>
+            <SelectItem value="2">2 levels</SelectItem>
+            <SelectItem value="3">3 levels</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div>
@@ -192,24 +200,23 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
           Notification email{" "}
           <span className="text-gray-400 font-normal">(optional)</span>
         </label>
-        <input
+        <Input
           id="sched-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading}
         aria-busy={loading}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        className="w-full"
       >
         {loading ? "Creating…" : "Create schedule"}
-      </button>
+      </Button>
     </form>
   );
 }
