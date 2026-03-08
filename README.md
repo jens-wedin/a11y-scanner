@@ -9,6 +9,7 @@ A client-facing web application that crawls a website, runs accessibility scanni
 - **Phase 2 — AI analysis:** Claude (`claude-sonnet-4-6`) deduplicates, enriches, and interprets violations into plain language with WCAG mapping, EAA risk assessment, fix complexity, and business impact
 - **Phase 3 — Report:** Filterable issue list sorted by severity with expandable detail cards
 - **Export:** PDF and JSON
+- **Scheduled scans:** Recurring audits (daily / weekly / monthly / custom cron) with optional Resend email notifications
 
 ## Prerequisites
 
@@ -100,8 +101,25 @@ GET  /api/scan/[id]/progress → SSE stream opens
 | Concurrency | p-queue (3 pages at a time) |
 | Testing | Vitest (unit) + Playwright Test (E2E) |
 
+## Scheduled Scans
+
+Create recurring scans from the **Schedules** page (`/schedules`), accessible via the "Schedules →" link on the home page.
+
+Schedules are stored in `schedules.json` (gitignored) and the cron scheduler starts automatically with the dev server via Next.js instrumentation.
+
+### Email notifications (optional)
+
+Add to `.env.local`:
+
+```
+RESEND_API_KEY=re_your_key_here
+RESEND_FROM=noreply@yourdomain.com
+```
+
+Get a free API key at [resend.com](https://resend.com). Without these vars, scans run silently with results visible in-app.
+
 ## Notes
 
 - The in-memory job queue is suitable for local-first use. For multi-user hosted deployment, replace `lib/queue.ts` with a Redis-backed store.
 - Reports are saved as JSON in `/reports/` (gitignored) and survive server restarts.
-- Phase 4 (scheduled monitoring, scan history) is not included in v1.
+- Schedules are saved as JSON in `schedules.json` (gitignored) and reloaded on server start.

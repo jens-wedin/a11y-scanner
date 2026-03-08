@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] — 2026-03-08
+
+### Added
+
+- **Scheduled scans:** Recurring accessibility audits (daily, weekly, monthly, or custom cron expression) via `node-cron`, initialized at server start through Next.js instrumentation
+- **Schedule management UI:** `/schedules` list page with enable/disable toggle, "Run now" button, last-run summary (issue count + critical badge), and delete
+- **Create schedule form:** `/schedules/new` with name, URL, frequency picker, time, max pages, max depth, and optional notification email
+- **Email notifications:** Resend API integration — sends a summary email with issue counts and a link to the report when a scheduled scan completes (`RESEND_API_KEY` + `RESEND_FROM` in `.env.local`)
+- **Schedules persistence:** Saved to `schedules.json` on disk (gitignored), reloaded on server restart
+- **"Schedules →" nav link** on the home page
+
+### Fixed
+
+- **Crawler silent failure:** First-page timeouts and network errors now trigger the headless=false retry (same as bot-protection responses) instead of silently returning an empty URL list
+- **Crawl preview empty state:** Replaced the misleading "Loading…" message with a clear "No pages discovered" explanation and a back button when the crawl returns zero URLs
+
 ## [0.1.1] — 2026-03-07
 
 ### Fixed
