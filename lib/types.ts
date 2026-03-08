@@ -109,6 +109,31 @@ export type ScanEvent =
   | { type: "analysis-complete"; report: ScanReport }
   | { type: "error"; message: string };
 
+// A saved recurring scan schedule
+export interface Schedule {
+  id: string;
+  name: string;
+  cronExpression: string;        // e.g. "0 9 1 * *"
+  config: {
+    targetUrl: string;
+    maxPages: 10 | 50 | 100 | 200;
+    maxDepth?: number;
+  };
+  enabled: boolean;
+  createdAt: string;             // ISO
+  lastRunAt?: string;            // ISO
+  lastScanId?: string;
+  lastRunSummary?: {
+    totalIssues: number;
+    criticalCount: number;
+    errorCount: number;
+  };
+  nextRunAt?: string;            // ISO — computed from cronExpression
+  notification: {
+    email?: string;
+  };
+}
+
 // Filter state for the report UI
 export interface ReportFilters {
   severity: string; // "all" | "critical" | "serious" | "moderate" | "minor"
