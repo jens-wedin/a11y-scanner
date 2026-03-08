@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ScanConfigForm } from "@/components/ScanConfigForm";
 import type { ScanConfig, CrawledUrl } from "@/lib/types";
 
@@ -66,6 +67,11 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="flex justify-end mb-4">
+          <Link href="/schedules" className="text-sm text-indigo-600 hover:underline">
+            Schedules →
+          </Link>
+        </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Accessibility Scanner
         </h1>
