@@ -102,6 +102,11 @@ async function runCrawl(
         if (err instanceof Error && err.message.startsWith("BOT_PROTECTION:")) {
           throw err;
         }
+        // If the very first page fails for any reason (timeout, network error, etc.),
+        // treat it like bot protection to trigger the headless=false retry
+        if (result.length === 0 && visited.size === 1) {
+          throw new Error("BOT_PROTECTION:0");
+        }
         // Skip individual unreachable pages silently
       }
     }
@@ -124,6 +129,11 @@ export async function crawl(
     if (err instanceof Error && err.message.startsWith("BOT_PROTECTION:")) {
       // Retry with a visible browser — bypasses most bot protection (Cloudflare etc.)
       const urls = await runCrawl(startUrl, maxPages, maxDepth, false);
+      if (urls.length === 0) {
+        throw new Error(
+          "No pages could be discovered. The site may be unreachable or blocking automated access."
+        );
+      }
       return { urls, headless: false };
     }
     throw err;

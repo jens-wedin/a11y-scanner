@@ -16,6 +16,8 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
   const startedAt = new Date().toISOString();
 
   try {
+    updateSchedule(schedule.id, { runningAt: startedAt });
+
     createJob({
       id: scanId,
       status: "crawling",
@@ -78,6 +80,7 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
       lastRunAt: new Date().toISOString(),
       lastScanId: scanId,
       lastRunSummary,
+      runningAt: undefined,
     });
 
     // 6. Send email notification
@@ -89,7 +92,7 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
       status: "error",
       error: err instanceof Error ? err.message : "Scheduled scan failed",
     });
-    updateSchedule(schedule.id, { lastRunAt: new Date().toISOString() });
+    updateSchedule(schedule.id, { lastRunAt: new Date().toISOString(), runningAt: undefined });
   }
 }
 

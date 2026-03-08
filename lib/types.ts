@@ -129,6 +129,7 @@ export interface Schedule {
     errorCount: number;
   };
   nextRunAt?: string;            // ISO — computed from cronExpression
+  runningAt?: string;            // ISO — set while a scan is in progress, cleared on finish
   notification: {
     email?: string;
   };

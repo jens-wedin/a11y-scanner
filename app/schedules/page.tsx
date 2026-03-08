@@ -11,6 +11,32 @@ function frequencyLabel(cronExpr: string): string {
   return cronExpr;
 }
 
+function Spinner() {
+  return (
+    <svg
+      className="inline-block h-4 w-4 animate-spin text-indigo-500"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
+}
+
 export default function SchedulesPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +51,14 @@ export default function SchedulesPage() {
     fetchSchedules();
   }, []);
 
+  // Poll every 3 s while any schedule is running
+  useEffect(() => {
+    const anyRunning = schedules.some((s) => s.runningAt);
+    if (!anyRunning) return;
+    const id = setInterval(fetchSchedules, 3000);
+    return () => clearInterval(id);
+  }, [schedules]);
+
   async function toggleEnabled(s: Schedule) {
     await fetch(`/api/schedules/${s.id}`, {
       method: "PUT",
@@ -36,7 +70,8 @@ export default function SchedulesPage() {
 
   async function runNow(id: string) {
     await fetch(`/api/schedules/${id}/run`, { method: "POST" });
-    alert("Scan started! Check back in a few minutes.");
+    // Refresh immediately so the spinner appears
+    fetchSchedules();
   }
 
   async function handleDelete(id: string, name: string) {
@@ -87,18 +122,28 @@ export default function SchedulesPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {schedules.map((s) => (
-                  <tr key={s.id}>
+                  <tr key={s.id} className={s.runningAt ? "bg-indigo-50/40" : ""}>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{s.name}</p>
-                      <p className="text-gray-400 text-xs truncate max-w-xs">
-                        {s.config.targetUrl}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        {s.runningAt && <Spinner />}
+                        <div>
+                          <p className="font-medium text-gray-900">{s.name}</p>
+                          <p className="text-gray-400 text-xs truncate max-w-xs">
+                            {s.config.targetUrl}
+                          </p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       {frequencyLabel(s.cronExpression)}
                     </td>
                     <td className="px-4 py-3">
-                      {s.lastRunAt ? (
+                      {s.runningAt ? (
+                        <span className="inline-flex items-center gap-1.5 text-indigo-600 text-xs font-medium">
+                          <Spinner />
+                          Running…
+                        </span>
+                      ) : s.lastRunAt ? (
                         <div>
                           <p className="text-gray-600">
                             {new Date(s.lastRunAt).toLocaleDateString()}
@@ -147,7 +192,8 @@ export default function SchedulesPage() {
                       <div className="flex items-center gap-3 justify-end">
                         <button
                           onClick={() => runNow(s.id)}
-                          className="text-xs text-indigo-600 hover:underline"
+                          disabled={!!s.runningAt}
+                          className="text-xs text-indigo-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Run now
                         </button>

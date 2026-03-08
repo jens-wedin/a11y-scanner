@@ -18,6 +18,7 @@ export default function CrawlPreviewPage() {
   const [urls, setUrls] = useState<CrawledUrl[]>([]);
   const [storedMeta, setStoredMeta] = useState<Omit<StoredCrawl, "urls"> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function CrawlPreviewPage() {
       setUrls(parsed.urls);
       setStoredMeta({ config: parsed.config, headless: parsed.headless });
     }
+    setHydrated(true);
   }, [scanId]);
 
   async function handleStart(selectedUrls: string[]) {
@@ -73,12 +75,22 @@ export default function CrawlPreviewPage() {
           </div>
         )}
 
-        {urls.length > 0 ? (
+        {!hydrated ? (
+          <p className="text-sm text-gray-500">Loading discovered pages…</p>
+        ) : urls.length > 0 ? (
           <UrlPreviewList urls={urls} onStart={handleStart} loading={loading} />
         ) : (
-          <p className="text-sm text-gray-500">
-            Loading discovered pages… If this persists, go back and try again.
-          </p>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">
+              No pages were discovered. The crawl may have timed out or the site may be blocking automated access.
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 underline"
+            >
+              ← Go back and try again
+            </button>
+          </div>
         )}
       </div>
     </main>
