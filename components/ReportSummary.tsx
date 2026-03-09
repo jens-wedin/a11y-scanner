@@ -1,7 +1,8 @@
-import type { ScanReport } from "@/lib/types";
+import type { ScanReport, ReportFilters } from "@/lib/types";
 
 interface Props {
   report: ScanReport;
+  onFilter?: (update: Partial<ReportFilters>) => void;
 }
 
 const SEVERITY_COLORS = {
@@ -11,7 +12,7 @@ const SEVERITY_COLORS = {
   minor: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 };
 
-export function ReportSummary({ report }: Props) {
+export function ReportSummary({ report, onFilter }: Props) {
   const { summary } = report;
   return (
     <section aria-label="Report summary" className="space-y-4">
@@ -27,10 +28,16 @@ export function ReportSummary({ report }: Props) {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {(["critical", "serious", "moderate", "minor"] as const).map((sev) => (
-          <div key={sev} className={`rounded-xl p-4 ${SEVERITY_COLORS[sev]}`}>
+          <button
+            key={sev}
+            type="button"
+            onClick={() => onFilter?.({ severity: sev })}
+            className={`rounded-xl p-4 text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${SEVERITY_COLORS[sev]} ${onFilter ? "cursor-pointer hover:opacity-80 transition-opacity" : "cursor-default"}`}
+            aria-label={`Filter by ${sev} severity`}
+          >
             <p className="text-2xl font-bold">{summary.bySeverity[sev]}</p>
             <p className="text-xs font-medium capitalize">{sev}</p>
-          </div>
+          </button>
         ))}
       </div>
 

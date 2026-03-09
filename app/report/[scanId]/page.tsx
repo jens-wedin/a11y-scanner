@@ -131,7 +131,10 @@ export default function ReportPage() {
 
         {/* Summary card */}
         <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-          <ReportSummary report={report} />
+          <ReportSummary
+            report={report}
+            onFilter={(update) => setFilters((f) => ({ ...f, ...update }))}
+          />
         </div>
 
         {/* Filter + issue list */}
