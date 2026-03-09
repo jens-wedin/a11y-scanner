@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { A11yIssue } from "@/lib/types";
+import type { A11yIssue, ReportFilters } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   issue: A11yIssue;
+  onFilter?: (update: Partial<ReportFilters>) => void;
 }
 
 const SEVERITY_STYLES: Record<A11yIssue["severity"], string> = {
@@ -28,7 +29,7 @@ const EAA_STYLES: Record<A11yIssue["eaaRisk"], string> = {
   low: "bg-muted text-muted-foreground border-border hover:bg-muted",
 };
 
-export function IssueCard({ issue }: Props) {
+export function IssueCard({ issue, onFilter }: Props) {
   const [expanded, setExpanded] = useState(false);
   const cardId = `issue-${issue.id}`;
   const detailsId = `${cardId}-details`;
@@ -39,18 +40,46 @@ export function IssueCard({ issue }: Props) {
         <div className="p-4 space-y-3">
           {/* Badges */}
           <div className="flex flex-wrap gap-2 items-center">
-            <Badge variant="outline" className={SEVERITY_STYLES[issue.severity]}>
-              {issue.severity.toUpperCase()}
-            </Badge>
-            <Badge variant="outline" className="text-muted-foreground">
-              WCAG {issue.wcagLevel}
-            </Badge>
-            <Badge variant="outline" className={EAA_STYLES[issue.eaaRisk]}>
-              EAA {issue.eaaRisk} risk
-            </Badge>
-            <Badge variant="outline" className="text-muted-foreground">
-              {issue.fixComplexity} effort
-            </Badge>
+            <button
+              type="button"
+              onClick={() => onFilter?.({ severity: issue.severity })}
+              className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              aria-label={`Filter by severity: ${issue.severity}`}
+            >
+              <Badge variant="outline" className={SEVERITY_STYLES[issue.severity]}>
+                {issue.severity.toUpperCase()}
+              </Badge>
+            </button>
+            <button
+              type="button"
+              onClick={() => onFilter?.({ wcagLevel: issue.wcagLevel })}
+              className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              aria-label={`Filter by WCAG level: ${issue.wcagLevel}`}
+            >
+              <Badge variant="outline" className="text-muted-foreground">
+                WCAG {issue.wcagLevel}
+              </Badge>
+            </button>
+            <button
+              type="button"
+              onClick={() => onFilter?.({ eaaRisk: issue.eaaRisk })}
+              className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              aria-label={`Filter by EAA risk: ${issue.eaaRisk}`}
+            >
+              <Badge variant="outline" className={EAA_STYLES[issue.eaaRisk]}>
+                EAA {issue.eaaRisk} risk
+              </Badge>
+            </button>
+            <button
+              type="button"
+              onClick={() => onFilter?.({ fixComplexity: issue.fixComplexity })}
+              className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
+              aria-label={`Filter by fix effort: ${issue.fixComplexity}`}
+            >
+              <Badge variant="outline" className="text-muted-foreground">
+                {issue.fixComplexity} effort
+              </Badge>
+            </button>
           </div>
 
           {/* Title + description */}
@@ -63,20 +92,28 @@ export function IssueCard({ issue }: Props) {
 
           {/* Meta */}
           <dl className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <div>
-              <dt className="inline font-medium text-foreground">WCAG: </dt>
-              <dd className="inline">
-                <a
-                  href={issue.wcagDocUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 dark:text-indigo-400 hover:underline"
-                  aria-label={`WCAG criterion ${issue.wcagCriterion} (opens in new tab)`}
-                >
+            {(issue.wcagCriterion || issue.wcagDocUrl) && (
+              <div>
+                <dt className="inline font-medium text-foreground">WCAG: </dt>
+                <dd className="inline">
                   {issue.wcagCriterion}
-                </a>
-              </dd>
-            </div>
+                  {issue.wcagDocUrl && (
+                    <>
+                      {" "}
+                      <a
+                        href={issue.wcagDocUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                        aria-label={`WCAG documentation${issue.wcagCriterion ? ` for ${issue.wcagCriterion}` : ""} (opens in new tab)`}
+                      >
+                        ↗
+                      </a>
+                    </>
+                  )}
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="inline font-medium text-foreground">Impact: </dt>
               <dd className="inline">{issue.businessImpact}</dd>

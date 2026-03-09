@@ -151,7 +151,10 @@ export default function ReportPage() {
             <ul className="space-y-3" aria-label="Accessibility issues">
               {filteredIssues.map((issue) => (
                 <li key={issue.id}>
-                  <IssueCard issue={issue} />
+                  <IssueCard
+                    issue={issue}
+                    onFilter={(update) => setFilters((f) => ({ ...f, ...update }))}
+                  />
                 </li>
               ))}
             </ul>
