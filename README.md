@@ -4,7 +4,7 @@ A client-facing web application that crawls a website, runs accessibility scanni
 
 ## Features
 
-- **Phase 1 — URL indexing:** Crawl a website and preview discovered pages before scanning
+- **Phase 1 — URL indexing:** Playwright Chromium BFS crawl discovers all same-origin pages up to the configured limit. Anti-bot hardening hides `navigator.webdriver`, spoofs a Chrome 131 user-agent, and retries in visible-browser mode if the first page is blocked. Each page is visited sequentially (15 s timeout), links are extracted via `page.evaluate()`, deduplicated, and queued. Returns `{url, title, depth}` per page. The user then reviews and deselects any pages before the scan starts.
 - **Phase 2 — Scanning:** axe-core via Playwright with WCAG 2.2 AA rules (wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa)
 - **Phase 2 — AI analysis:** Claude (`claude-sonnet-4-6`) deduplicates, enriches, and interprets violations into plain language with WCAG mapping, EAA risk assessment, fix complexity, and business impact
 - **Phase 3 — Report:** Filterable issue list sorted by severity with expandable detail cards
@@ -64,10 +64,10 @@ Next.js 15 App Router
 │   ├── scan/[scanId]/          Live progress (SSE-driven)
 │   ├── report/[scanId]/        Filterable accessibility report
 │   └── api/
-│       ├── crawl/              POST: Playwright BFS crawl
+│       ├── crawl/              POST: Playwright BFS crawl → returns [{url, title, depth}]
 │       └── scan/[scanId]/      SSE progress, report, PDF/JSON export
 ├── lib/
-│   ├── crawler.ts              Playwright BFS link discovery
+│   ├── crawler.ts              Playwright BFS link discovery (sequential, 15 s/page, anti-bot)
 │   ├── scanner.ts              axe-core page scanning (p-queue, concurrency 3)
 │   ├── analyzer.ts             Claude API enrichment + graceful fallback
 │   ├── queue.ts                In-memory scan job state + SSE controllers
