@@ -1,4 +1,5 @@
 import { launchBrowser, createStealthContext } from "./browser";
+import { handleTurnstile } from "./turnstile";
 import AxeBuilder from "@axe-core/playwright";
 import PQueue from "p-queue";
 import type { RawPageResult } from "./types";
@@ -25,6 +26,9 @@ export async function scanPages(
               waitUntil: "domcontentloaded",
               timeout: 30000,
             });
+
+            // Handle Turnstile challenge if present
+            await handleTurnstile(page);
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axeResults = await new AxeBuilder({ page: page as any })

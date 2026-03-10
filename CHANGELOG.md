@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] — 2026-03-10
+
+### Added
+
+- **Cloudflare Turnstile auto-click:** Detects Turnstile challenge widgets and clicks the checkbox automatically — works for managed-mode challenges without a paid solver service
+- **Challenge page detection:** `waitForChallenge()` now actively detects Cloudflare "Just a moment" pages and attempts Turnstile resolution before giving up
+
+### Changed
+
+- **Challenge wait time:** Increased from 15 s to 20 s to allow more time for Turnstile resolution
+- **First page timeout:** Increased from 30 s to 45 s for heavily protected sites
+
 ## [0.5.0] — 2026-03-10
 
 ### Added

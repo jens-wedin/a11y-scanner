@@ -1,4 +1,6 @@
 import { launchBrowser, createStealthContext, randomDelay } from "./browser";
+import { handleTurnstile } from "./turnstile";
+import type { Page } from "playwright-core";
 import type { CrawledUrl } from "./types";
 
 export function isSameDomain(url: string, origin: string): boolean {
@@ -20,6 +22,56 @@ export function normalizeUrl(url: string): string {
     return u.href;
   } catch {
     return url;
+  }
+}
+
+/**
+ * Wait for a Cloudflare or similar challenge page to resolve.
+ * If a Turnstile widget is detected, attempts to click the checkbox.
+ * Polls the page for up to `maxWait` ms, checking if the URL has changed
+ * (redirect after challenge) or if real page content has appeared.
+ */
+async function waitForChallenge(
+  page: Page,
+  originalUrl: string,
+  maxWait = 20000
+): Promise<void> {
+  const start = Date.now();
+  const interval = 1000;
+  let turnstileAttempted = false;
+
+  while (Date.now() - start < maxWait) {
+    // Check if we've been redirected (challenge completed)
+    const currentUrl = page.url();
+    if (currentUrl !== originalUrl && !currentUrl.includes("challenge")) {
+      return;
+    }
+
+    // Check if the page has real content (not a challenge page)
+    const isChallenge = await page.evaluate(() => {
+      const body = document.body?.innerText ?? "";
+      const title = document.title?.toLowerCase() ?? "";
+      if (title.includes("just a moment") || title.includes("attention required"))
+        return true;
+      if (body.includes("Checking your browser") || body.includes("Please wait"))
+        return true;
+      return false;
+    }).catch(() => false);
+
+    if (!isChallenge) return;
+
+    // Try clicking the Turnstile checkbox once
+    if (!turnstileAttempted) {
+      turnstileAttempted = true;
+      const solved = await handleTurnstile(page);
+      if (solved) {
+        // Give the page a moment to reload after solving
+        await new Promise((r) => setTimeout(r, 2000));
+        return;
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, interval));
   }
 }
 
@@ -62,22 +114,37 @@ async function runCrawl(
           // pages can complete their redirect. Faster domcontentloaded
           // for subsequent pages.
           waitUntil: isFirstPage ? "networkidle" : "domcontentloaded",
-          timeout: isFirstPage ? 30000 : 15000,
+          timeout: isFirstPage ? 45000 : 15000,
         });
+
+        // If this is the first page, check for challenge pages and wait
+        if (isFirstPage) {
+          await waitForChallenge(page, url);
+        }
 
         isFirstPage = false;
 
-        if (!response || !response.ok()) {
-          // If the very first URL is blocked, surface a clear error
+        // Re-check the response after potential challenge resolution.
+        // If the page redirected during the challenge, get the new status.
+        const finalStatus = response?.status() ?? 0;
+        const finalUrl = page.url();
+
+        // Consider it successful if we ended up on a real page
+        // (challenge pages redirect, so the final URL differs from a blocked response)
+        const isOk =
+          (response?.ok() ?? false) ||
+          (finalUrl !== url && !finalUrl.includes("challenge"));
+
+        if (!isOk) {
           if (result.length === 0 && visited.size === 1) {
-            const status = response?.status() ?? 0;
-            throw new Error(`BOT_PROTECTION:${status}`);
+            throw new Error(`BOT_PROTECTION:${finalStatus}`);
           }
           continue;
         }
 
         const title = await page.title();
-        result.push({ url, title, depth });
+        const pageUrl = normalizeUrl(finalUrl);
+        result.push({ url: pageUrl, title, depth });
 
         if (result.length < maxPages) {
           const links = await page.evaluate(() =>
@@ -128,14 +195,22 @@ export async function crawl(
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("BOT_PROTECTION:")) {
       // Retry with a visible browser — bypasses most bot protection (Cloudflare etc.)
-      const urls = await runCrawl(startUrl, maxPages, maxDepth, false);
-      if (urls.length === 0) {
+      try {
+        const urls = await runCrawl(startUrl, maxPages, maxDepth, false);
+        if (urls.length === 0) {
+          throw new Error(
+            "No pages could be discovered. The site may be behind a paywall, " +
+              "using Cloudflare protection, or blocking automated access."
+          );
+        }
+        return { urls, headless: false };
+      } catch (retryErr) {
+        // If the visible browser also fails, give a clear message
         throw new Error(
           "No pages could be discovered. The site may be behind a paywall, " +
             "using Cloudflare protection, or blocking automated access."
         );
       }
-      return { urls, headless: false };
     }
     throw err;
   }
