@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] — 2026-03-10
+
+### Added
+
+- **Stealth browser engine:** `playwright-extra` + `puppeteer-extra-plugin-stealth` adds ~10 evasion techniques (WebGL vendor, Chrome runtime, permissions, navigator.plugins) on top of the existing `rebrowser-playwright` patches
+- **Shared browser helper:** New `lib/browser.ts` centralises browser launch and context config — eliminates duplication between crawler and scanner
+- **Smarter wait strategy:** First page uses `networkidle` (30 s) so Cloudflare challenge pages can complete; subsequent pages use faster `domcontentloaded` (15 s)
+- **Random navigation delay:** 1–3 s random pause between crawler page loads to reduce bot detection
+- **Clickable severity cards:** Summary cards (Critical/Serious/Moderate/Minor) on the report page now filter issues when clicked
+- **Clickable issue chips:** Severity, WCAG level, EAA risk, and fix effort badges on each IssueCard apply the matching filter when clicked
+
+### Changed
+
+- **rebrowser-patches mode:** Set `REBROWSER_PATCHES_RUNTIME_FIX_MODE=alwaysIsolated` for strongest anti-detection
+- **Browser context:** Added realistic screen dimensions, Stockholm timezone, and Swedish language accept header
+- **Error messages:** Blocked-site errors now mention possible causes (paywall, Cloudflare) instead of generic text
+
 ## [0.4.0] — 2026-03-09
 
 ### Added

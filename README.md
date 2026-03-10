@@ -4,7 +4,7 @@ A client-facing web application that crawls a website, runs accessibility scanni
 
 ## Features
 
-- **Phase 1 — URL indexing:** Playwright Chromium BFS crawl discovers all same-origin pages up to the configured limit. Anti-bot hardening hides `navigator.webdriver`, spoofs a Chrome 131 user-agent, and retries in visible-browser mode if the first page is blocked. Each page is visited sequentially (15 s timeout), links are extracted via `page.evaluate()`, deduplicated, and queued. Returns `{url, title, depth}` per page. The user then reviews and deselects any pages before the scan starts.
+- **Phase 1 — URL indexing:** Playwright Chromium BFS crawl discovers all same-origin pages up to the configured limit. Anti-bot hardening uses `playwright-extra` with stealth plugin (~10 evasion techniques), `rebrowser-playwright` patches (Runtime.Enable leak fix in `alwaysIsolated` mode), spoofed Chrome 131 user-agent, and random navigation delays. First page waits for `networkidle` (30 s) so Cloudflare challenge pages can complete; subsequent pages use `domcontentloaded` (15 s). Retries in visible-browser mode if the first page is blocked. Links are extracted via `page.evaluate()`, deduplicated, and queued. Returns `{url, title, depth}` per page. The user then reviews and deselects any pages before the scan starts.
 - **Phase 2 — Scanning:** axe-core via Playwright with WCAG 2.2 AA rules (wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa)
 - **Phase 2 — AI analysis:** Claude (`claude-sonnet-4-6`) deduplicates, enriches, and interprets violations into plain language with WCAG mapping, EAA risk assessment, fix complexity, and business impact
 - **Phase 3 — Report:** Filterable issue list sorted by severity with expandable detail cards
@@ -67,7 +67,8 @@ Next.js 15 App Router
 │       ├── crawl/              POST: Playwright BFS crawl → returns [{url, title, depth}]
 │       └── scan/[scanId]/      SSE progress, report, PDF/JSON export
 ├── lib/
-│   ├── crawler.ts              Playwright BFS link discovery (sequential, 15 s/page, anti-bot)
+│   ├── browser.ts              Shared stealth browser launch (playwright-extra + stealth plugin)
+│   ├── crawler.ts              Playwright BFS link discovery (sequential, anti-bot, random delays)
 │   ├── scanner.ts              axe-core page scanning (p-queue, concurrency 3)
 │   ├── analyzer.ts             Claude API enrichment + graceful fallback
 │   ├── queue.ts                In-memory scan job state + SSE controllers
@@ -95,7 +96,7 @@ GET  /api/scan/[id]/progress → SSE stream opens
 |---|---|
 | Framework | Next.js 15 (App Router) + TypeScript |
 | UI | React 19 + Tailwind CSS |
-| Scanner | Playwright + @axe-core/playwright |
+| Scanner | Playwright + playwright-extra (stealth) + @axe-core/playwright |
 | AI analysis | Anthropic SDK (`claude-sonnet-4-6`) |
 | PDF export | @react-pdf/renderer |
 | Concurrency | p-queue (3 pages at a time) |

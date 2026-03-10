@@ -84,7 +84,7 @@ function createFallbackIssues(pageResults: RawPageResult[]): A11yIssue[] {
     id: violation.id,
     title: violation.help,
     description: violation.description,
-    wcagCriterion: "See axe-core helpUrl",
+    wcagCriterion: "",
     wcagLevel: "AA" as const,
     wcagDocUrl: violation.helpUrl,
     eaaRisk: (

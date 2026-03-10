@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { launchBrowser, createStealthContext, randomDelay } from "./browser";
 import type { CrawledUrl } from "./types";
 
 export function isSameDomain(url: string, origin: string): boolean {
@@ -36,23 +36,13 @@ async function runCrawl(
     { url: normalizeUrl(startUrl), depth: 0 },
   ];
 
-  const browser = await chromium.launch({
-    headless,
-    args: ["--disable-blink-features=AutomationControlled"],
-  });
-  const context = await browser.newContext({
-    userAgent:
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    viewport: { width: 1280, height: 720 },
-    locale: "en-US",
-    extraHTTPHeaders: { "Accept-Language": "en-US,en;q=0.9" },
-  });
-  await context.addInitScript(() => {
-    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-  });
+  const browser = await launchBrowser(headless);
+  const context = await createStealthContext(browser);
   const page = await context.newPage();
 
   try {
+    let isFirstPage = true;
+
     while (queue.length > 0 && result.length < maxPages) {
       const { url, depth } = queue.shift()!;
 
@@ -61,11 +51,21 @@ async function runCrawl(
 
       visited.add(url);
 
+      // Add a random delay between navigations to avoid bot detection
+      if (!isFirstPage) {
+        await randomDelay(1000, 3000);
+      }
+
       try {
         const response = await page.goto(url, {
-          waitUntil: "domcontentloaded",
-          timeout: 15000,
+          // Use networkidle for the first page so Cloudflare challenge
+          // pages can complete their redirect. Faster domcontentloaded
+          // for subsequent pages.
+          waitUntil: isFirstPage ? "networkidle" : "domcontentloaded",
+          timeout: isFirstPage ? 30000 : 15000,
         });
+
+        isFirstPage = false;
 
         if (!response || !response.ok()) {
           // If the very first URL is blocked, surface a clear error
@@ -131,7 +131,8 @@ export async function crawl(
       const urls = await runCrawl(startUrl, maxPages, maxDepth, false);
       if (urls.length === 0) {
         throw new Error(
-          "No pages could be discovered. The site may be unreachable or blocking automated access."
+          "No pages could be discovered. The site may be behind a paywall, " +
+            "using Cloudflare protection, or blocking automated access."
         );
       }
       return { urls, headless: false };
