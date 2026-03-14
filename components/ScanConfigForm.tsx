@@ -84,7 +84,7 @@ export function ScanConfigForm({ onSubmit, loading }: Props) {
         >
           {MAX_PAGES_OPTIONS.map((n) => (
             <div key={n} className="flex items-center gap-1.5">
-              <RadioGroupItem value={String(n)} id={`maxPages-${n}`} />
+              <RadioGroupItem value={String(n)} id={`maxPages-${n}`} aria-label={`${n} pages`} />
               <label htmlFor={`maxPages-${n}`} className="text-sm cursor-pointer">
                 {n}
               </label>

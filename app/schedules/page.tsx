@@ -129,7 +129,7 @@ export default function SchedulesPage() {
                   <TableHead>Frequency</TableHead>
                   <TableHead>Last run</TableHead>
                   <TableHead>Enabled</TableHead>
-                  <TableHead />
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

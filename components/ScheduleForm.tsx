@@ -166,7 +166,7 @@ export function ScheduleForm({ onSubmit, loading, error }: ScheduleFormProps) {
         >
           {([10, 50, 100, 200] as const).map((n) => (
             <div key={n} className="flex items-center gap-1.5">
-              <RadioGroupItem value={String(n)} id={`sched-maxPages-${n}`} />
+              <RadioGroupItem value={String(n)} id={`sched-maxPages-${n}`} aria-label={`${n} pages`} />
               <label
                 htmlFor={`sched-maxPages-${n}`}
                 className="text-sm text-foreground cursor-pointer"

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] — 2026-03-14
+
+### Fixed
+
+- **Radio button accessibility:** Added `aria-label` to `RadioGroupItem` in ScanConfigForm and ScheduleForm — Base UI's `<span role="radio">` doesn't support `htmlFor` label association (WCAG 4.1.2)
+- **Heading order on report page:** Added `<h2>` section heading before the issues list to fix h1→h3 skip (WCAG 1.3.1)
+- **Empty table header on schedules page:** Added visually hidden "Actions" text to the actions column header
+
 ## [0.5.1] — 2026-03-10
 
 ### Added

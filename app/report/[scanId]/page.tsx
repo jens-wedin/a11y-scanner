@@ -139,6 +139,7 @@ export default function ReportPage() {
 
         {/* Filter + issue list */}
         <div className="bg-card rounded-2xl shadow-sm border border-border p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Issues</h2>
           <FilterBar
             filters={filters}
             onChange={setFilters}

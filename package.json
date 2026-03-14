@@ -1,6 +1,6 @@
 {
   "name": "a11y-scanner",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -44,9 +44,11 @@
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
     "babel-plugin-react-compiler": "1.0.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "jsdom": "^28.1.0",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "typescript-eslint": "^8.57.0",
     "vitest": "^4.0.18"
   }
 }
