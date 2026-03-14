@@ -126,7 +126,7 @@ export interface Schedule {
   lastRunSummary?: {
     totalIssues: number;
     criticalCount: number;
-    errorCount: number;
+    seriousCount: number;
   };
   nextRunAt?: string;            // ISO — computed from cronExpression
   runningAt?: string;            // ISO — set while a scan is in progress, cleared on finish
