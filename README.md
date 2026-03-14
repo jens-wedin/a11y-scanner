@@ -70,6 +70,7 @@ Next.js 15 App Router
 │   ├── browser.ts              Shared stealth browser launch (playwright-extra + stealth plugin)
 │   ├── crawler.ts              Playwright BFS link discovery (sequential, anti-bot, random delays)
 │   ├── scanner.ts              axe-core page scanning (p-queue, concurrency 3)
+│   ├── turnstile.ts            Cloudflare Turnstile detection + auto-click
 │   ├── analyzer.ts             Claude API enrichment + graceful fallback
 │   ├── queue.ts                In-memory scan job state + SSE controllers
 │   ├── report.ts               JSON persistence to /reports/
