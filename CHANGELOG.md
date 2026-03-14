@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] — 2026-03-14
+
+### Added
+
+- **Email report sharing:** New "Email Report" button on the report page opens a dialog to send reports via email (Resend). Choose between embedding the full report in the email body, attaching PDF, attaching JSON, or attaching both.
+- **Dialog UI component:** Reusable dialog built on `@base-ui/react/dialog` with backdrop, focus trap, and animations
+- **Shared Resend client:** Extracted lazy-initialised Resend client into `lib/resend.ts` for reuse across scheduler and report email features
+- **Report email templates:** Rich HTML email templates with severity summary cards and issue table (`lib/report-email.ts`)
+
+### Changed
+
+- **Scheduler refactored:** `lib/scheduler.ts` now imports shared Resend client from `lib/resend.ts` instead of maintaining its own
+
 ## [0.5.2] — 2026-03-14
 
 ### Fixed

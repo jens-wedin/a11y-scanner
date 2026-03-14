@@ -8,7 +8,7 @@ A client-facing web application that crawls a website, runs accessibility scanni
 - **Phase 2 — Scanning:** axe-core via Playwright with WCAG 2.2 AA rules (wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa)
 - **Phase 2 — AI analysis:** Claude (`claude-sonnet-4-6`) deduplicates, enriches, and interprets violations into plain language with WCAG mapping, EAA risk assessment, fix complexity, and business impact
 - **Phase 3 — Report:** Filterable issue list sorted by severity with expandable detail cards
-- **Export:** PDF and JSON
+- **Export:** PDF and JSON download, or email report directly with embedded HTML / PDF / JSON attachments
 - **Scheduled scans:** Recurring audits (daily / weekly / monthly / custom cron) with optional Resend email notifications
 
 ## Prerequisites
@@ -42,7 +42,7 @@ npm run dev
 2. **Review discovered pages** — deselect any you don't want scanned
 3. **Watch live progress** as axe-core scans each page via Playwright
 4. **View the report** — filter by severity, WCAG level, EAA risk, or fix effort
-5. **Export** as PDF (client deliverable) or JSON (developer/CI use)
+5. **Export** as PDF (client deliverable) or JSON (developer/CI use), or **email** the report directly
 
 ## Tests
 
@@ -75,6 +75,8 @@ Next.js 15 App Router
 │   ├── queue.ts                In-memory scan job state + SSE controllers
 │   ├── report.ts               JSON persistence to /reports/
 │   ├── pdf.tsx                 @react-pdf/renderer PDF generation
+│   ├── resend.ts               Shared lazy Resend email client
+│   ├── report-email.ts         HTML email templates for report sharing
 │   └── types.ts                Shared TypeScript types
 ├── components/                 React UI components (Tailwind CSS)
 └── reports/                    Saved report JSON files (gitignored)
@@ -118,7 +120,7 @@ RESEND_API_KEY=re_your_key_here
 RESEND_FROM=noreply@yourdomain.com
 ```
 
-Get a free API key at [resend.com](https://resend.com). Without these vars, scans run silently with results visible in-app.
+Get a free API key at [resend.com](https://resend.com). These env vars are used for both scheduled scan notifications and the "Email Report" button on the report page. Without them, scans run silently with results visible in-app.
 
 ## Notes
 

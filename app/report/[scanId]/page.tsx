@@ -6,6 +6,7 @@ import { ReportSummary } from "@/components/ReportSummary";
 import { FilterBar } from "@/components/FilterBar";
 import { IssueCard } from "@/components/IssueCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { EmailReportDialog } from "@/components/EmailReportDialog";
 import type { ScanReport, ReportFilters } from "@/lib/types";
 
 const DEFAULT_FILTERS: ReportFilters = {
@@ -112,6 +113,7 @@ export default function ReportPage() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <EmailReportDialog scanId={scanId} />
             <a
               href={`/api/scan/${scanId}/export/json`}
               download
