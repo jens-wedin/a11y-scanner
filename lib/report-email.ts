@@ -1,5 +1,14 @@
 import type { ScanReport } from "./types";
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const severityColor: Record<string, string> = {
   critical: "#dc2626",
   serious: "#ea580c",
@@ -14,7 +23,7 @@ function header(report: ScanReport): string {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 640px; margin: 0 auto; color: #1a1a1a;">
       <h1 style="font-size: 22px; margin-bottom: 4px;">Accessibility Report</h1>
-      <p style="color: #666; margin: 0 0 20px;">${report.targetUrl} &middot; ${date}</p>
+      <p style="color: #666; margin: 0 0 20px;">${escapeHtml(report.targetUrl)} &middot; ${date}</p>
   `;
 }
 
@@ -68,12 +77,12 @@ export function buildReportEmailHtml(report: ScanReport): string {
       return `
         <tr>
           <td style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
-            <div style="font-weight: 600; font-size: 14px;">${issue.title}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 2px;">${issue.wcagCriterion} · ${issue.affectedPages.length} page${issue.affectedPages.length !== 1 ? "s" : ""}</div>
+            <div style="font-weight: 600; font-size: 14px;">${escapeHtml(issue.title)}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 2px;">${escapeHtml(issue.wcagCriterion)} · ${issue.affectedPages.length} page${issue.affectedPages.length !== 1 ? "s" : ""}</div>
           </td>
           <td style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0; text-align: center;">
             <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; color: white; background: ${color};">
-              ${issue.severity}
+              ${escapeHtml(issue.severity)}
             </span>
           </td>
         </tr>

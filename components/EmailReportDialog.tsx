@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogTrigger,
@@ -32,6 +32,13 @@ export function EmailReportDialog({ scanId }: EmailReportDialogProps) {
   const [format, setFormat] = useState<EmailFormat>("pdf");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
+    };
+  }, []);
 
   async function handleSend() {
     setLoading(true);
@@ -48,7 +55,8 @@ export function EmailReportDialog({ scanId }: EmailReportDialogProps) {
 
       if (res.ok) {
         setResult({ type: "success", message: `Report sent to ${email}` });
-        setTimeout(() => {
+        if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = setTimeout(() => {
           setOpen(false);
           setResult(null);
           setEmail("");
