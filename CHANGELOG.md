@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] — 2026-03-22
+
+### Fixed
+
+- **HTML injection in email reports:** Escaped all user-controlled fields (`targetUrl`, issue titles, WCAG criteria, severity labels) before interpolating into email HTML templates, preventing malicious page content from injecting HTML into outbound emails
+- **Timer leak in EmailReportDialog:** Auto-close `setTimeout` is now tracked in a `useRef` and cancelled on unmount, preventing state updates on an unmounted component
+
 ## [0.6.0] — 2026-03-14
 
 ### Added
