@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadSchedules, createSchedule } from "@/lib/schedules";
 import { registerSchedule } from "@/lib/scheduler";
+import { assertScannableUrl, BlockedUrlError } from "@/lib/url-guard";
 import cron from "node-cron";
 
 export async function GET() {
@@ -28,9 +29,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    new URL(config.targetUrl);
-  } catch {
-    return NextResponse.json({ error: "Invalid targetUrl" }, { status: 400 });
+    await assertScannableUrl(config.targetUrl);
+  } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    throw err;
   }
 
   const schedule = createSchedule({ name, cronExpression, config, enabled: true, notification });

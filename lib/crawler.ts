@@ -1,5 +1,6 @@
 import { launchBrowser, createStealthContext, randomDelay } from "./browser";
 import { handleTurnstile } from "./turnstile";
+import { assertScannableUrl, BlockedUrlError } from "./url-guard";
 import type { Page } from "playwright-core";
 import type { CrawledUrl } from "./types";
 
@@ -103,6 +104,15 @@ async function runCrawl(
 
       visited.add(url);
 
+      // Every navigation target is re-checked, not just the seed: a discovered
+      // link or a redirect can point at an internal address.
+      try {
+        await assertScannableUrl(url);
+      } catch (err) {
+        if (err instanceof BlockedUrlError) continue;
+        throw err;
+      }
+
       // Add a random delay between navigations to avoid bot detection
       if (!isFirstPage) {
         await randomDelay(1000, 3000);
@@ -128,6 +138,17 @@ async function runCrawl(
         // If the page redirected during the challenge, get the new status.
         const finalStatus = response?.status() ?? 0;
         const finalUrl = page.url();
+
+        // A permitted host can redirect to an internal one — if that happened,
+        // abandon this page without reading its title, links or content.
+        if (finalUrl !== url) {
+          try {
+            await assertScannableUrl(finalUrl);
+          } catch (err) {
+            if (err instanceof BlockedUrlError) continue;
+            throw err;
+          }
+        }
 
         // Consider it successful if we ended up on a real page
         // (challenge pages redirect, so the final URL differs from a blocked response)
@@ -189,6 +210,10 @@ export async function crawl(
   maxPages: number,
   maxDepth?: number
 ): Promise<{ urls: CrawledUrl[]; headless: boolean }> {
+  // Validate before launching anything, and outside the retry below, so a
+  // blocked URL surfaces as itself rather than as "no pages discovered".
+  await assertScannableUrl(startUrl);
+
   try {
     const urls = await runCrawl(startUrl, maxPages, maxDepth, true);
     return { urls, headless: true };

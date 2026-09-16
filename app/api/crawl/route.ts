@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { crawl } from "@/lib/crawler";
+import { assertScannableUrl, BlockedUrlError } from "@/lib/url-guard";
 import { createJob, updateJob } from "@/lib/queue";
 
 export async function POST(request: NextRequest) {
@@ -19,11 +20,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate URL
+    // Reject non-public targets before anything is launched (SSRF).
     try {
-      new URL(targetUrl);
-    } catch {
-      return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+      await assertScannableUrl(targetUrl);
+    } catch (err) {
+      if (err instanceof BlockedUrlError) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      throw err;
     }
 
     const scanId = uuidv4();
@@ -47,6 +51,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ scanId, urls, headless });
   } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     console.error("Crawl error:", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Crawl failed" },

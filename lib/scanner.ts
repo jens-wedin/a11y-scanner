@@ -1,5 +1,6 @@
 import { launchBrowser, createStealthContext } from "./browser";
 import { handleTurnstile } from "./turnstile";
+import { assertScannableUrl, BlockedUrlError } from "./url-guard";
 import AxeBuilder from "@axe-core/playwright";
 import PQueue from "p-queue";
 import type { RawPageResult } from "./types";
@@ -9,15 +10,40 @@ export async function scanPages(
   onProgress: (result: RawPageResult) => void,
   headless = true
 ): Promise<RawPageResult[]> {
+  // The scanner is reachable independently of the crawler (/api/scan/start
+  // accepts caller-supplied selectedUrls), so it validates its own input.
+  const allowed: string[] = [];
+  const rejected: RawPageResult[] = [];
+
+  for (const url of urls) {
+    try {
+      await assertScannableUrl(url);
+      allowed.push(url);
+    } catch (err) {
+      if (!(err instanceof BlockedUrlError)) throw err;
+      rejected.push({
+        url,
+        violations: [],
+        scannedAt: new Date().toISOString(),
+        error: err.message,
+      });
+    }
+  }
+
+  for (const result of rejected) onProgress(result);
+
+  // Nothing survived validation — don't pay for a browser launch.
+  if (allowed.length === 0) return rejected;
+
   const browser = await launchBrowser(headless);
   // Reduce concurrency to 1 when using a visible browser to avoid opening
   // multiple Chrome windows simultaneously
   const queue = new PQueue({ concurrency: headless ? 3 : 1 });
-  const results: RawPageResult[] = [];
+  const results: RawPageResult[] = [...rejected];
 
   try {
     await Promise.all(
-      urls.map((url) =>
+      allowed.map((url) =>
         queue.add(async () => {
           const context = await createStealthContext(browser);
           const page = await context.newPage();

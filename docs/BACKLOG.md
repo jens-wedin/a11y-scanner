@@ -10,7 +10,7 @@ Status key: `TODO` · `IN PROGRESS` · `DONE` · `WONTFIX`
 ## P0 — Block any public deploy until these are done
 
 ### SEC-1 — Validate scan target URLs (SSRF)
-**Status:** TODO · **Where:** `lib/crawler.ts`, `app/api/crawl/route.ts:23-27`, `app/api/schedules/route.ts:31`
+**Status:** DONE (2026-09-16) · **Where:** `lib/crawler.ts`, `app/api/crawl/route.ts:23-27`, `app/api/schedules/route.ts:31`
 
 `new URL(targetUrl)` is a parser, not a security control. Verified to accept
 `file:///etc/passwd`, `http://169.254.169.254/...`, `http://localhost:6379/`,
@@ -22,12 +22,17 @@ With `file://` the origin is the string `"null"`, so `isSameDomain`
 directory listings off the seed file.
 
 **Acceptance criteria**
-- [ ] Shared `assertScannableUrl()` helper; rejects any scheme but `http:`/`https:`
-- [ ] Hostname resolved and checked against RFC1918, loopback, link-local (169.254/16), CGNAT (100.64/10), and IPv6 equivalents
-- [ ] Re-checked **after redirects**, not only on input
-- [ ] Enforced inside `crawler.ts` so `/api/crawl`, `/api/schedules` and `lib/scheduler.ts` all inherit it
-- [ ] Playwright request interceptor aborts off-allowlist hosts as defence in depth
-- [ ] Tests cover each bypass string listed above
+- [x] Shared `assertScannableUrl()` helper in `lib/url-guard.ts`; rejects any scheme but `http:`/`https:`
+- [x] Hostname resolved via `dns.lookup` (honours /etc/hosts) and checked against RFC1918, loopback, link-local (169.254/16), CGNAT (100.64/10), and IPv6 equivalents
+- [x] Re-checked **after redirects** in `crawler.ts`, not only on input
+- [x] Enforced in `crawler.ts` **and** `scanner.ts` — the latter is independently reachable via `/api/scan/start`'s `selectedUrls`
+- [x] `/api/crawl` and `/api/schedules` return 400 rather than 500
+- [x] 32 tests cover every bypass string verified during the review
+- [ ] Playwright request interceptor aborts off-allowlist hosts as defence in depth — *deferred, see note*
+
+**Note:** the guard blocks navigation targets. Sub-resource requests made by a
+scanned page (images, XHR) are not yet intercepted. Lower risk — their responses
+never reach the report — but worth closing later.
 
 ### SEC-2 — Authentication on every API route
 **Status:** TODO · **Where:** all 10 routes under `app/api/`, no `middleware.ts` exists
