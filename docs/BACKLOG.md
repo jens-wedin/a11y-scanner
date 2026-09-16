@@ -85,15 +85,17 @@ so a schedule can be created clean and then mutated to an internal `targetUrl`.
 - [x] Tests: internal `targetUrl`, `file://`, invalid cron, and server-field overwrite all rejected
 
 ### DEP-1 — Upgrade Next.js off the critical advisory
-**Status:** TODO · **Where:** `package.json:22`
+**Status:** DONE (2026-09-16) · **Where:** `package.json:22`
 
 `next` 16.1.6 is CRITICAL — HTTP request smuggling in rewrites. Fixed in 16.3.5.
 `npm audit --omit=dev` reports 22 vulnerabilities total (1 critical, 11 high).
 
 **Acceptance criteria**
-- [ ] Next.js on 16.3.5+
-- [ ] `npm audit --omit=dev` shows zero critical
-- [ ] Remaining high-severity entries triaged and recorded here
+- [x] Next.js on ^16.3.5 (was 16.1.6)
+- [x] `npm audit` shows **zero vulnerabilities**, down from 22 (1 critical, 11 high)
+- [x] Remaining highs were all non-breaking transitive fixes, applied via `npm audit fix`
+- [x] `uuid` bumped 10 → ^11.1.1; only `v4()` with no `buf` argument is used, so the advisory never applied here, but the bump clears it with no API change
+- [x] Verified after each step: 79 tests, `tsc --noEmit`, and `next build` all clean
 
 ### BUG-1 — `ANTROPHIC_API_KEY` typo silently disables AI analysis
 **Status:** DONE (2026-09-16) · **Where:** `.env.local`, `lib/analyzer.ts:7`

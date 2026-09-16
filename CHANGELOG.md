@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
 - **Path traversal in report loading (SEC-5):** `loadScanReport`/`saveScanReport` built a file path from a route param without validating it; `../decoy` really did read outside `reports/`. Scan IDs are now checked against a UUID pattern before any filesystem access.
 - **HTML injection in scheduled-report emails (SEC-3):** `lib/scheduler.ts` built its own email template and interpolated `schedule.name` and `config.targetUrl` unescaped, missed by the 0.6.1 fix. Both now use the shared `escapeHtml` helper.
 
+### Changed
+
+- **Dependencies (DEP-1):** Next.js 16.1.6 → ^16.3.5, clearing a critical HTTP request smuggling advisory in rewrites. Remaining transitive advisories fixed non-breakingly, and `uuid` bumped 10 → ^11.1.1. `npm audit` now reports zero vulnerabilities, down from 22.
+
 ### Fixed
 
 - **AI analysis was silently disabled (BUG-1):** `.env.local` held `ANTROPHIC_API_KEY` — misspelled — so the Anthropic SDK never saw a key and every scan fell back to axe-only issues while looking successful. Renamed, plus `lib/env-check.ts` now warns at startup and `lib/analyzer.ts` logs why it fell back rather than swallowing the error.
