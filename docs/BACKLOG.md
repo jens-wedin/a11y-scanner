@@ -109,12 +109,18 @@ scan falls through to `createFallbackIssues` and every report is flagged
 ### DEC-1 — Decide the position on bot-detection evasion
 **Status:** TODO · **Where:** `lib/turnstile.ts`, `lib/browser.ts`, `package.json:25-27`
 
-**Raised from P2 on 2026-09-16.** The trigger was a cold email from an
-unidentified sender: *"I went through jens-wedin/a11y-scanner and spotted
-puppeteer stealth. still building that out?"* No name, no company, no actual
-finding — almost certainly lead-gen from the proxy / unblocker / CAPTCHA-solving
-industry, which scrapes GitHub for `puppeteer-extra-plugin-stealth` as a
-buying-intent signal.
+**Raised from P2 on 2026-09-16.** The trigger was a cold sales email: *"I went
+through jens-wedin/a11y-scanner and spotted puppeteer stealth. still building
+that out?"* — from Isaac Bentoumi, "Commercial OPS @ anyIP"
+(`isaac@anyipcore.com`). anyIP (anyip.io) is a residential and mobile proxy
+provider, ~$2/GB, no strict KYC. Sent from a dedicated cold-outreach domain
+registered 2025-03-17, separate from their primary `anyip.io`.
+
+Their lead-scoring picked up `puppeteer-extra-plugin-stealth` in a public
+`package.json` — the highest buying-intent signal in that market. Which means a
+proxy vendor's targeting model read this repo and classified an accessibility
+compliance tool as a bot-evasion operation. That classification is the problem,
+independent of the sender.
 
 The sender is not the point. The point is that the repo is **public**, the
 evasion stack is the most legible thing in it from outside, and it is now
