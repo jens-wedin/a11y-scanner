@@ -48,11 +48,13 @@ delivers the contents out-of-band from your verified Resend domain.
 before any request reaches the app, which covers the browser-facing routes without
 application code.
 
-- [ ] Vercel project created and linked
-- [ ] Deployment Protection (Standard, password) enabled
+- [x] Vercel project `studio-manfred/a11y-scanner` created, GitHub repo connected, production env vars set via `vercel env add`
+- [x] Deployed: `a11y-scanner-gcucla1ji-studio-manfred.vercel.app`
+- [x] Deployment Protection active — **Vercel Authentication (SSO)**, `all_except_custom_domains`, on by default
+- [x] Verified per CLAUDE.md: `POST /api/crawl` with a cloud-metadata target answers **401**, not 500; GET routes 302 to `vercel.com/sso-api`. The app never sees an unauthenticated request.
+- [ ] **Your call:** SSO gates on Vercel team login, not a shared password. If a client needs access without a Vercel account, Password Protection is a Pro add-on and you choose the password — tell me and I'll enable it.
 - [ ] `to` in the email route restricted to an operator-configured allowlist — *still needed: protection does not constrain what an authenticated operator can mail to whom*
-- [ ] Bypass token configured for any cron or programmatic access (OPS-1 depends on this)
-- [ ] Confirm a protected API route answers 401, not 500, per CLAUDE.md
+- [ ] Bypass token configured for cron/programmatic access (OPS-1 depends on this)
 
 ---
 
