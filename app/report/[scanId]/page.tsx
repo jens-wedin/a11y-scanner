@@ -1,4 +1,5 @@
 "use client";
+import { fetchJson } from "@/lib/fetch-json";
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
@@ -25,12 +26,8 @@ export default function ReportPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`/api/scan/${scanId}/report`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Report not found");
-        return r.json();
-      })
-      .then((data: ScanReport) => setReport(data))
+    fetchJson<ScanReport>(`/api/scan/${scanId}/report`)
+      .then((data) => setReport(data))
       .catch((err: Error) => setError(err.message));
   }, [scanId]);
 

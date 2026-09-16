@@ -1,4 +1,5 @@
 "use client";
+import { fetchJson } from "@/lib/fetch-json";
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -37,18 +38,13 @@ export default function CrawlPreviewPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/scan/start", {
+      await fetchJson("/api/scan/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Send config so the server can recreate the job if the
         // in-memory queue was cleared (e.g. by a dev-server hot reload)
         body: JSON.stringify({ scanId, selectedUrls, ...storedMeta }),
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to start scan");
-      }
 
       router.push(`/scan/${scanId}`);
     } catch (err) {

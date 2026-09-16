@@ -1,4 +1,5 @@
 "use client";
+import { fetchJson } from "@/lib/fetch-json";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -53,10 +54,15 @@ function Spinner() {
 export default function SchedulesPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   async function fetchSchedules() {
-    const res = await fetch("/api/schedules");
-    if (res.ok) setSchedules(await res.json());
+    try {
+      setSchedules(await fetchJson<Schedule[]>("/api/schedules"));
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load schedules");
+    }
     setLoading(false);
   }
 
@@ -111,7 +117,14 @@ export default function SchedulesPage() {
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-center"
+          >
+            <p className="text-sm text-foreground">{error}</p>
+          </div>
+        ) : loading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : schedules.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-12 text-center">

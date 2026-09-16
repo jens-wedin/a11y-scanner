@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **"Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON":** Vercel Deployment Protection answers an unauthenticated API GET with a 302 to its login page. The browser follows it, so the client received a **200 with an HTML body** — `res.ok` was true, the success path ran, and `res.json()` then threw a raw parse error that told the user nothing. Client fetches now go through `lib/fetch-json.ts`, which checks the content type and reports "Your session has expired. Reload the page to sign in again." Also covers empty and malformed bodies, and surfaces the server's `error` field on JSON error responses.
+
+  Related: `app/page.tsx` called `res.json()` on the error branch, so *any* non-JSON error body produced a parse error instead of the real message. Six client call sites were affected.
+
 ## [0.7.0] — 2026-09-16
 
 ### Removed

@@ -1,4 +1,5 @@
 "use client";
+import { fetchJson } from "@/lib/fetch-json";
 
 import { useState, useRef, useEffect } from "react";
 import {
@@ -45,27 +46,27 @@ export function EmailReportDialog({ scanId }: EmailReportDialogProps) {
     setResult(null);
 
     try {
-      const res = await fetch(`/api/scan/${scanId}/email`, {
+      await fetchJson(`/api/scan/${scanId}/email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: email, format }),
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setResult({ type: "success", message: `Report sent to ${email}` });
-        if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
-        closeTimeoutRef.current = setTimeout(() => {
-          setOpen(false);
-          setResult(null);
-          setEmail("");
-        }, 2000);
-      } else {
-        setResult({ type: "error", message: data.error || "Failed to send email" });
-      }
-    } catch {
-      setResult({ type: "error", message: "Network error. Please try again." });
+      setResult({ type: "success", message: `Report sent to ${email}` });
+      if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = setTimeout(() => {
+        setOpen(false);
+        setResult(null);
+        setEmail("");
+      }, 2000);
+    } catch (err) {
+      // fetchJson throws with the server's message, or a sign-in prompt when an
+      // auth gate returned HTML instead of JSON.
+      setResult({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Failed to send email. Please try again.",
+      });
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 "use client";
+import { fetchJson } from "@/lib/fetch-json";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -34,21 +35,14 @@ export default function HomePage() {
     }, 8000);
 
     try {
-      const res = await fetch("/api/crawl", {
+      const { scanId, urls } = await fetchJson<{
+        scanId: string;
+        urls: CrawledUrl[];
+      }>("/api/crawl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Crawl failed");
-      }
-
-      const { scanId, urls } = (await res.json()) as {
-        scanId: string;
-        urls: CrawledUrl[];
-      };
 
       // Store URLs + config in sessionStorage so the preview page can recreate
       // the job if the server-side queue was cleared by a hot reload

@@ -1,4 +1,5 @@
 "use client";
+import { fetchJson } from "@/lib/fetch-json";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -17,15 +18,11 @@ export default function NewSchedulePage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/schedules", {
+      await fetchJson("/api/schedules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error ?? "Failed to create schedule");
-      }
       router.push("/schedules");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

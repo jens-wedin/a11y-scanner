@@ -274,6 +274,27 @@ browser-driven crawl that runs for minutes. Vercel Services (containers) or Verc
 Sandbox may suit this better than Functions. Worth deciding before building around
 the 300 s ceiling.
 
+### BUG-2 — Client fetches assumed every response was JSON
+**Status:** DONE (2026-09-16) · **Where:** `lib/fetch-json.ts` (new), 6 client call sites
+
+Reported by Jens as `Unexpected token '<', "<!DOCTYPE "... is not valid JSON`.
+
+Root cause reproduced against the deployment: Deployment Protection 302s an API
+GET to `vercel.com/sso-api`; the browser follows it and the client sees **HTTP
+200 with `content-type: text/html`**. Because `res.ok` was true, the code took
+the success path and `res.json()` threw. Locally every route returns JSON, so
+this only appears once deployed behind the gate.
+
+- [x] `lib/fetch-json.ts` checks content type before parsing; 6 tests
+- [x] Distinct messages for an auth gate, an empty body, a malformed body, and a JSON error response
+- [x] All six client call sites migrated
+- [x] `app/schedules/page.tsx` gained an error state — it previously swallowed failures via `if (res.ok)` with no else
+
+**Note:** this makes the failure legible; it does not remove it. The session
+still has to be valid. Use the stable alias `a11y-scanner-studio-manfred.vercel.app`
+rather than a per-deployment URL, since the SSO cookie is per-host and every
+deploy mints a new hostname.
+
 ## Notes
 
 - Review scope: whole application, not a diff — the tree was clean with no branch delta.
