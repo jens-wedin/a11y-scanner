@@ -104,12 +104,25 @@ scan falls through to `createFallbackIssues` and every report is flagged
 
 ---
 
-## P2 — Decide, then act
+## P1 — Fix before next release (continued)
 
 ### DEC-1 — Decide the position on bot-detection evasion
 **Status:** TODO · **Where:** `lib/turnstile.ts`, `lib/browser.ts`, `package.json:25-27`
 
-This is the item the dependency alert was pointing at. The project ships a full
+**Raised from P2 on 2026-09-16.** The trigger was a cold email from an
+unidentified sender: *"I went through jens-wedin/a11y-scanner and spotted
+puppeteer stealth. still building that out?"* No name, no company, no actual
+finding — almost certainly lead-gen from the proxy / unblocker / CAPTCHA-solving
+industry, which scrapes GitHub for `puppeteer-extra-plugin-stealth` as a
+buying-intent signal.
+
+The sender is not the point. The point is that the repo is **public**, the
+evasion stack is the most legible thing in it from outside, and it is now
+demonstrably being found by strangers. Studio Manfred sells accessibility
+compliance; a public repo advertising Cloudflare challenge handling is a poor
+artifact for a client or competitor doing diligence to land on.
+
+The project ships a full
 evasion stack: `puppeteer-extra-plugin-stealth` (~15 evasion modules),
 `rebrowser-playwright` aliased over `playwright`, `alwaysIsolated` patch mode,
 UA and `navigator.webdriver` spoofing, randomised human-like delays, a headful
@@ -135,8 +148,30 @@ let the site owner allowlist the crawler.
 
 **Acceptance criteria**
 - [ ] Decision made and recorded here with a date
-- [ ] README's "Anti-bot hardening" section rewritten to match reality
+- [ ] README's "Anti-bot hardening" section rewritten to match reality (see DOC-1)
 - [ ] If (1): stealth deps removed, crawler works against a consenting test site
+
+### DOC-1 — Stop advertising the evasion stack in public docs
+**Status:** TODO · **Where:** `README.md:7`, `README.md:70`, `README.md:102`, `CHANGELOG.md:49`, `CHANGELOG.md:58`
+
+`README.md:7` documents the whole stack in detail — `playwright-extra` with
+"~10 evasion techniques", the `rebrowser-playwright` Runtime.Enable patch,
+`alwaysIsolated` mode, the spoofed Chrome 131 UA, random navigation delays, and
+that the first page waits on `networkidle` "so Cloudflare challenge pages can
+complete". That paragraph is what turns a `package.json` grep hit into a
+qualified lead, and what a client doing diligence would read.
+
+Blocked on DEC-1 — if the stack is removed, this resolves itself. If it is kept,
+the docs still shouldn't read as a capability pitch.
+
+**Acceptance criteria**
+- [ ] README describes what the scanner does, not how it avoids detection
+- [ ] CHANGELOG entries kept honest but not promotional
+- [ ] Consider making the repo private until DEC-1 is settled
+
+---
+
+## P2 — Hardening and infrastructure
 
 ### SEC-5 — Validate `scanId` route params
 **Status:** TODO · **Where:** `lib/report.ts:23`
