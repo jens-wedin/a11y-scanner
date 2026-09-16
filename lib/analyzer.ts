@@ -153,7 +153,13 @@ export async function analyzeViolations(
     if (!Array.isArray(parsed)) throw new Error("Response is not an array");
 
     return parsed as A11yIssue[];
-  } catch {
+  } catch (err) {
+    // Degrade to axe-only issues rather than failing the scan, but never do it
+    // silently — a missing ANTHROPIC_API_KEY looked identical to a clean run.
+    console.error(
+      "[analyzer] Claude analysis failed, falling back to axe-only issues:",
+      err instanceof Error ? err.message : err
+    );
     return createFallbackIssues(pageResults);
   }
 }

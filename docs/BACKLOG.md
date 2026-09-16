@@ -96,16 +96,22 @@ so a schedule can be created clean and then mutated to an internal `targetUrl`.
 - [ ] Remaining high-severity entries triaged and recorded here
 
 ### BUG-1 — `ANTROPHIC_API_KEY` typo silently disables AI analysis
-**Status:** TODO · **Where:** `.env.local`, `lib/analyzer.ts:7`
+**Status:** DONE (2026-09-16) · **Where:** `.env.local`, `lib/analyzer.ts:7`
 
 The env var is misspelled. `new Anthropic()` reads `ANTHROPIC_API_KEY`, so every
 scan falls through to `createFallbackIssues` and every report is flagged
 `analysisFailed`. Not a security issue — a product-breaking one.
 
 **Acceptance criteria**
-- [ ] Env var renamed to `ANTHROPIC_API_KEY` locally and in Vercel (`vercel env add`, per CLAUDE.md)
-- [ ] Startup check fails loudly when the key is missing instead of degrading silently
-- [ ] README documents the required env vars
+- [x] Env var renamed to `ANTHROPIC_API_KEY` in `.env.local` (value preserved)
+- [x] `lib/env-check.ts` warns at startup, and names the misspelling specifically if the old key is still present
+- [x] `lib/analyzer.ts` logs why it fell back instead of swallowing the error in a bare `catch {}`
+- [x] README gains an environment-variable table
+- [ ] **Still needs doing by you:** set `ANTHROPIC_API_KEY` in Vercel via `vercel env add ANTHROPIC_API_KEY production` and remove the misspelled one — I can't touch your Vercel project
+
+**Note:** the README already documented the correct spelling; only `.env.local`
+was wrong. The fallback behaviour is kept deliberately — an axe-only report beats
+no report — but it is no longer silent.
 
 ---
 
@@ -184,8 +190,21 @@ the docs still shouldn't read as a capability pitch.
 
 ## P2 — Hardening and infrastructure
 
+### DEP-2 — Verify the Claude model id in the analyzer
+**Status:** TODO · **Where:** `lib/analyzer.ts:137`
+
+`analyzeViolations` requests `model: "claude-sonnet-4-6"`. The current Claude
+generation is the 5 family (`claude-opus-5`, `claude-sonnet-5`) plus Haiku 4.5.
+Worth confirming the id still resolves — with BUG-1 fixed the analyzer will now
+log a clear error if it does not, so run one scan and read the console before
+assuming it works.
+
+**Acceptance criteria**
+- [ ] One real scan run with `ANTHROPIC_API_KEY` set; console shows no `[analyzer]` fallback
+- [ ] Model id updated if it no longer resolves, with the cost difference noted
+
 ### SEC-5 — Validate `scanId` route params
-**Status:** TODO · **Where:** `lib/report.ts:23`
+**Status:** DONE (2026-09-16) · **Where:** `lib/report.ts:23`
 
 `path.join(REPORTS_DIR, \`${scanId}.json\`)` uses a route param. Next.js's
 dynamic-segment matching plus the forced `.json` suffix make traversal hard to
@@ -193,7 +212,12 @@ reach, so this is hardening rather than a live vulnerability — but a UUID rege
 closes the question for one line.
 
 **Acceptance criteria**
-- [ ] `scanId` validated against a UUID v4 regex before any filesystem access
+- [x] `scanId` validated against a UUID regex before any filesystem access, on both read and write
+
+**Note:** the RED test proved this was a *live* traversal at the library level —
+`loadScanReport("../decoy-secret")` really did read a file outside `reports/`.
+Next.js routing made it hard to reach through the HTTP layer, but the function
+is now safe regardless of who calls it.
 
 ### OPS-1 — Replace the in-memory job queue for hosted use
 **Status:** TODO · **Where:** `lib/queue.ts`, noted in `README.md:127`

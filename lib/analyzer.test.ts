@@ -101,3 +101,44 @@ describe("analyzeViolations", () => {
     expect(result[0].id).toBeDefined();
   });
 });
+
+describe("analyzeViolations — failure visibility (BUG-1)", () => {
+  const pageResults: RawPageResult[] = [
+    {
+      url: "https://example.com",
+      scannedAt: new Date().toISOString(),
+      violations: [
+        {
+          id: "image-alt",
+          impact: "critical",
+          description: "Images must have alternate text",
+          help: "Images must have alternate text",
+          helpUrl: "https://dequeuniversity.com/rules/axe/4.8/image-alt",
+          nodes: [{ html: '<img src="a.png">', target: ["img"], failureSummary: "x" }],
+        },
+      ],
+    },
+  ];
+
+  it("logs the reason when Claude analysis fails instead of failing silently", async () => {
+    const original = process.env.ANTHROPIC_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    const errors: unknown[] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...args) => {
+      errors.push(args);
+    });
+
+    try {
+      const { analyzeViolations } = await import("./analyzer");
+      const issues = await analyzeViolations(pageResults, "https://example.com");
+      // Still degrades gracefully — a fallback report beats no report.
+      expect(issues.length).toBeGreaterThan(0);
+      // But the failure must be visible.
+      expect(errors.length).toBeGreaterThan(0);
+      expect(JSON.stringify(errors)).toMatch(/analy/i);
+    } finally {
+      spy.mockRestore();
+      if (original !== undefined) process.env.ANTHROPIC_API_KEY = original;
+    }
+  }, 30000);
+});

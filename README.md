@@ -122,6 +122,19 @@ RESEND_FROM=noreply@yourdomain.com
 
 Get a free API key at [resend.com](https://resend.com). These env vars are used for both scheduled scan notifications and the "Email Report" button on the report page. Without them, scans run silently with results visible in-app.
 
+### Environment variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | Claude analysis of axe-core violations. Without it every scan falls back to axe-only issues and reports are flagged `analysisFailed`. |
+| `RESEND_API_KEY` | No | Sending report emails. Must be set together with `RESEND_FROM`. |
+| `RESEND_FROM` | No | Verified sender address for report emails. |
+| `BASE_URL` | No | Absolute base for report links in emails. Defaults to `http://localhost:3000`. |
+
+The spelling of `ANTHROPIC_API_KEY` matters — the Anthropic SDK reads that exact
+name, and a misspelling degrades silently rather than erroring. The server checks
+this at startup (`lib/env-check.ts`) and warns on the console if anything is off.
+
 ## Notes
 
 - The in-memory job queue is suitable for local-first use. For multi-user hosted deployment, replace `lib/queue.ts` with a Redis-backed store.
