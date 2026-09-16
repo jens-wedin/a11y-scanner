@@ -35,7 +35,7 @@ scanned page (images, XHR) are not yet intercepted. Lower risk — their respons
 never reach the report — but worth closing later.
 
 ### SEC-2 — Authentication on every API route
-**Status:** TODO · **Where:** all 10 routes under `app/api/`, no `middleware.ts` exists
+**Status:** IN PROGRESS — Vercel Deployment Protection chosen as the first layer · **Where:** all 10 routes under `app/api/`, no `middleware.ts` exists
 
 No route has any auth check. Combined with SEC-1 this is an unauthenticated
 SSRF with a built-in exfiltration endpoint: crawl an internal host, then
@@ -43,9 +43,16 @@ SSRF with a built-in exfiltration endpoint: crawl an internal host, then
 delivers the contents out-of-band from your verified Resend domain.
 
 **Acceptance criteria**
-- [ ] `middleware.ts` protects `/api/*`
-- [ ] `to` in the email route restricted to an operator-configured allowlist
-- [ ] Decide and document the intended deployment model (see DEC-1)
+**Decision (2026-09-16, Jens):** deploy to Vercel with Deployment Protection
+(password) as the first auth layer. That gates the whole deployment at the edge,
+before any request reaches the app, which covers the browser-facing routes without
+application code.
+
+- [ ] Vercel project created and linked
+- [ ] Deployment Protection (Standard, password) enabled
+- [ ] `to` in the email route restricted to an operator-configured allowlist — *still needed: protection does not constrain what an authenticated operator can mail to whom*
+- [ ] Bypass token configured for any cron or programmatic access (OPS-1 depends on this)
+- [ ] Confirm a protected API route answers 401, not 500, per CLAUDE.md
 
 ---
 
@@ -225,19 +232,45 @@ closes the question for one line.
 Next.js routing made it hard to reach through the HTTP layer, but the function
 is now safe regardless of who calls it.
 
-### OPS-1 — Replace the in-memory job queue for hosted use
-**Status:** TODO · **Where:** `lib/queue.ts`, noted in `README.md:127`
+### OPS-1 — Make the app actually work on Vercel
+**Status:** TODO — **now blocking the deploy** · **Where:** `lib/queue.ts`, `lib/report.ts`, `lib/schedules.ts`, `instrumentation.ts`, `next.config.ts`
 
-Reports and schedules are written to the local filesystem (`reports/*.json`,
-`schedules.json`), which does not persist on Vercel. `node-cron` in-process also
-won't fire reliably on serverless. Blocks any multi-user deployment.
+Verified 2026-09-16: the app builds and would deploy, but scans cannot complete
+on Vercel as written. Four independent blockers:
+
+1. **Read-only filesystem.** `lib/report.ts:21,30` and `lib/schedules.ts:18` write
+   to `process.cwd()`. On Vercel only `/tmp` is writable, and it is neither shared
+   between instances nor persistent. `saveScanReport` throws, so a scan can finish
+   and still have no retrievable report.
+2. **In-memory job store.** `lib/queue.ts:4` holds jobs in a module-scope `Map`.
+   `POST /api/scan/start` and the SSE route `GET /api/scan/[scanId]/progress` are
+   separate invocations. Fluid Compute reuses instances but guarantees no affinity,
+   so "Scan job not found" will happen intermittently.
+3. **In-process cron.** `instrumentation.ts` calls `initScheduler()`, which registers
+   `node-cron` tasks on instance boot. Functions are not always-on, so schedules
+   will effectively never fire.
+4. **Chromium is not in the bundle.** Playwright's browsers live in a machine-level
+   cache (`~/Library/Caches/ms-playwright`), not in `node_modules`. The function
+   needs the binary. Feasible now that package size can reach 5 GB, but it needs
+   `PLAYWRIGHT_BROWSERS_PATH=0` plus an install step in the build, or a
+   serverless-specific Chromium build.
+
+Also worth noting: `maxDuration = 300` on the progress route caps a scan at five
+minutes. A 200-page scan at one second of politeness delay per page exceeds that
+before axe-core does any work.
 
 **Acceptance criteria**
-- [ ] Storage decision made (Marketplace Postgres / Redis / Blob)
-- [ ] `node-cron` replaced with Vercel Cron hitting a protected route
-- [ ] Per CLAUDE.md: after deploy, confirm the protected route answers 401 not 500
+- [ ] Storage decision made (Marketplace Postgres, Redis, or Blob) and reports + schedules moved off local disk
+- [ ] Job state moved out of module memory
+- [ ] `node-cron` replaced by Vercel Cron hitting a protected route
+- [ ] Chromium reliably present in the function, verified by a real scan on the deployment
+- [ ] Long scans either chunked across invocations or moved to a runtime without a 5-minute ceiling
+- [ ] Per CLAUDE.md: after deploy, hit one protected API route and confirm it answers 401, not 500
 
----
+**Open question for Jens:** serverless functions are an awkward fit for a
+browser-driven crawl that runs for minutes. Vercel Services (containers) or Vercel
+Sandbox may suit this better than Functions. Worth deciding before building around
+the 300 s ceiling.
 
 ## Notes
 
