@@ -71,7 +71,7 @@ HTML from your SPF/DKIM-signed domain.
 - [x] CHANGELOG 0.6.1 entry corrected, `[Unreleased]` section added
 
 ### SEC-4 — Validate schedule updates (mass assignment)
-**Status:** TODO · **Where:** `app/api/schedules/[id]/route.ts:16-30`, `lib/schedules.ts:46`
+**Status:** DONE (2026-09-16) · **Where:** `app/api/schedules/[id]/route.ts:16-30`, `lib/schedules.ts:46`
 
 `PUT` accepts `Partial<Schedule>` and spreads it over the stored record. None of
 `POST`'s checks (`cron.validate()`, `new URL()`, required fields) are repeated,
@@ -80,9 +80,9 @@ so a schedule can be created clean and then mutated to an internal `targetUrl`.
 `schedules.json`.
 
 **Acceptance criteria**
-- [ ] `PUT` runs the same validation as `POST`
-- [ ] Mutable fields whitelisted (`name`, `cronExpression`, `config`, `enabled`, `notification`) rather than spread
-- [ ] Test: `PUT` with an internal `targetUrl` is rejected
+- [x] `PUT` runs the same validation as `POST`, plus type checks POST lacked
+- [x] Mutable fields whitelisted (`name`, `cronExpression`, `config`, `enabled`, `notification`) rather than spread — `id`, `createdAt`, `lastScanId` and friends are now server-owned
+- [x] Tests: internal `targetUrl`, `file://`, invalid cron, and server-field overwrite all rejected
 
 ### DEP-1 — Upgrade Next.js off the critical advisory
 **Status:** TODO · **Where:** `package.json:22`

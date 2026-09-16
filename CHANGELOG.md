@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Security
 
 - **SSRF in scan targets (SEC-1):** `new URL()` was the only validation on user-supplied scan URLs, which accepts `file://`, `javascript:`, cloud-metadata addresses (`169.254.169.254`) and every RFC1918 range. The server-side browser navigated there and scraped HTML reached the report. Adds `lib/url-guard.ts` with a scheme allowlist and IPv4/IPv6 address classification, resolving hostnames through `dns.lookup` so `/etc/hosts` entries and DNS rebinding are caught. Enforced at crawl entry, every navigation, after redirects, and in `scanPages()` — which is independently reachable via `/api/scan/start`. Blocked targets now return 400 rather than 500.
+- **Mass assignment on schedule updates (SEC-4):** `PUT /api/schedules/[id]` spread the raw request body over the stored record, skipping every check `POST` performs. A schedule could be created with a clean URL then repointed at an internal address, and server-owned fields (`id`, `createdAt`, `lastScanId`) were caller-writable. Accepted fields are now whitelisted and individually validated.
 - **HTML injection in scheduled-report emails (SEC-3):** `lib/scheduler.ts` built its own email template and interpolated `schedule.name` and `config.targetUrl` unescaped, missed by the 0.6.1 fix. Both now use the shared `escapeHtml` helper.
 
 ## [0.6.1] — 2026-03-22
