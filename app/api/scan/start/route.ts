@@ -5,11 +5,10 @@ import type { ScanConfig, CrawledUrl } from "@/lib/types";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { scanId, selectedUrls, config, headless } = body as {
+    const { scanId, selectedUrls, config } = body as {
       scanId: string;
       selectedUrls?: string[];
       config?: ScanConfig & { selectedUrls?: string[] };
-      headless?: boolean;
     };
 
     if (!scanId) {
@@ -40,7 +39,6 @@ export async function POST(request: NextRequest) {
         startedAt: new Date().toISOString(),
         progress: { scannedCount: 0, totalCount: crawledUrls.length },
         crawledUrls,
-        headless: headless ?? true,
       });
       job = getJob(scanId)!;
     }

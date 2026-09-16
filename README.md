@@ -4,7 +4,7 @@ A client-facing web application that crawls a website, runs accessibility scanni
 
 ## Features
 
-- **Phase 1 — URL indexing:** Playwright Chromium BFS crawl discovers all same-origin pages up to the configured limit. Anti-bot hardening uses `playwright-extra` with stealth plugin (~10 evasion techniques), `rebrowser-playwright` patches (Runtime.Enable leak fix in `alwaysIsolated` mode), spoofed Chrome 131 user-agent, and random navigation delays. First page waits for `networkidle` (30 s) so Cloudflare challenge pages can complete; subsequent pages use `domcontentloaded` (15 s). Retries in visible-browser mode if the first page is blocked. Links are extracted via `page.evaluate()`, deduplicated, and queued. Returns `{url, title, depth}` per page. The user then reviews and deselects any pages before the scan starts.
+- **Phase 1 — URL indexing:** Playwright Chromium BFS crawl discovers all same-origin pages up to the configured limit. The crawler identifies itself honestly via its user-agent, pauses one second between navigations to avoid loading the target, and validates every navigation target against `lib/url-guard.ts` before opening it. Links are extracted via `page.evaluate()`, deduplicated, and queued. Returns `{url, title, depth}` per page. The user then reviews and deselects any pages before the scan starts.
 - **Phase 2 — Scanning:** axe-core via Playwright with WCAG 2.2 AA rules (wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa)
 - **Phase 2 — AI analysis:** Claude (`claude-sonnet-4-6`) deduplicates, enriches, and interprets violations into plain language with WCAG mapping, EAA risk assessment, fix complexity, and business impact
 - **Phase 3 — Report:** Filterable issue list sorted by severity with expandable detail cards
@@ -67,9 +67,10 @@ Next.js 15 App Router
 │       ├── crawl/              POST: Playwright BFS crawl → returns [{url, title, depth}]
 │       └── scan/[scanId]/      SSE progress, report, PDF/JSON export
 ├── lib/
-│   ├── browser.ts              Shared stealth browser launch (playwright-extra + stealth plugin)
-│   ├── crawler.ts              Playwright BFS link discovery (sequential, anti-bot, random delays)
-│   ├── scanner.ts              axe-core page scanning (p-queue, concurrency 3)
+│   ├── browser.ts              Chromium launch + context (honest user-agent, crawl delay)
+│   ├── crawler.ts              Playwright BFS link discovery (sequential, SSRF-guarded)
+│   ├── scanner.ts              axe-core page scanning (p-queue, concurrency 3, SSRF-guarded)
+│   ├── url-guard.ts            Scheme + private-address validation for every scan target
 │   ├── turnstile.ts            Cloudflare Turnstile detection + auto-click
 │   ├── analyzer.ts             Claude API enrichment + graceful fallback
 │   ├── queue.ts                In-memory scan job state + SSE controllers
@@ -97,9 +98,9 @@ GET  /api/scan/[id]/progress → SSE stream opens
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 (App Router) + TypeScript |
+| Framework | Next.js 16 (App Router) + TypeScript |
 | UI | React 19 + Tailwind CSS |
-| Scanner | Playwright + playwright-extra (stealth) + @axe-core/playwright |
+| Scanner | Playwright + @axe-core/playwright |
 | AI analysis | Anthropic SDK (`claude-sonnet-4-6`) |
 | PDF export | @react-pdf/renderer |
 | Concurrency | p-queue (3 pages at a time) |
@@ -134,6 +135,23 @@ Get a free API key at [resend.com](https://resend.com). These env vars are used 
 The spelling of `ANTHROPIC_API_KEY` matters — the Anthropic SDK reads that exact
 name, and a misspelling degrades silently rather than erroring. The server checks
 this at startup (`lib/env-check.ts`) and warns on the console if anything is off.
+
+## Scanning sites you do not own
+
+This scanner identifies itself honestly and does not attempt to evade bot
+detection. If a target sits behind Cloudflare, a WAF or similar, the correct
+path is consent, not circumvention:
+
+1. Get written permission from the site owner before scanning.
+2. Ask them to allowlist the scanner's user-agent
+   (`A11yScanner/0.7 (+https://studiomanfred.com/a11y-scanner; accessibility auditing)`),
+   or to allowlist the IP the scan runs from.
+3. If they decline, do not scan. A blocked crawl is a business conversation,
+   not a technical problem.
+
+Earlier versions shipped `puppeteer-extra-plugin-stealth`, `rebrowser-playwright`
+and a Cloudflare Turnstile checkbox-clicker. These were removed in 0.7.0 — see
+CHANGELOG and `docs/BACKLOG.md` (DEC-1) for the reasoning.
 
 ## Notes
 

@@ -40,16 +40,15 @@ export async function POST(request: NextRequest) {
       progress: { scannedCount: 0, totalCount: 0 },
     });
 
-    const { urls, headless } = await crawl(targetUrl, maxPages, maxDepth);
+    const urls = await crawl(targetUrl, maxPages, maxDepth);
 
     updateJob(scanId, {
       status: "pending",
       crawledUrls: urls,
-      headless,
       progress: { scannedCount: 0, totalCount: urls.length },
     });
 
-    return NextResponse.json({ scanId, urls, headless });
+    return NextResponse.json({ scanId, urls });
   } catch (err) {
     if (err instanceof BlockedUrlError) {
       return NextResponse.json({ error: err.message }, { status: 400 });

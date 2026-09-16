@@ -1,5 +1,4 @@
-import { launchBrowser, createStealthContext } from "./browser";
-import { handleTurnstile } from "./turnstile";
+import { launchBrowser, createContext } from "./browser";
 import { assertScannableUrl, BlockedUrlError } from "./url-guard";
 import AxeBuilder from "@axe-core/playwright";
 import PQueue from "p-queue";
@@ -7,8 +6,7 @@ import type { RawPageResult } from "./types";
 
 export async function scanPages(
   urls: string[],
-  onProgress: (result: RawPageResult) => void,
-  headless = true
+  onProgress: (result: RawPageResult) => void
 ): Promise<RawPageResult[]> {
   // The scanner is reachable independently of the crawler (/api/scan/start
   // accepts caller-supplied selectedUrls), so it validates its own input.
@@ -35,26 +33,23 @@ export async function scanPages(
   // Nothing survived validation — don't pay for a browser launch.
   if (allowed.length === 0) return rejected;
 
-  const browser = await launchBrowser(headless);
+  const browser = await launchBrowser();
   // Reduce concurrency to 1 when using a visible browser to avoid opening
   // multiple Chrome windows simultaneously
-  const queue = new PQueue({ concurrency: headless ? 3 : 1 });
+  const queue = new PQueue({ concurrency: 3 });
   const results: RawPageResult[] = [...rejected];
 
   try {
     await Promise.all(
       allowed.map((url) =>
         queue.add(async () => {
-          const context = await createStealthContext(browser);
+          const context = await createContext(browser);
           const page = await context.newPage();
           try {
             await page.goto(url, {
               waitUntil: "domcontentloaded",
               timeout: 30000,
             });
-
-            // Handle Turnstile challenge if present
-            await handleTurnstile(page);
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const axeResults = await new AxeBuilder({ page: page as any })

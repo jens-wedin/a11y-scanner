@@ -10,7 +10,6 @@ import type { CrawledUrl, ScanConfig } from "@/lib/types";
 interface StoredCrawl {
   urls: CrawledUrl[];
   config: ScanConfig;
-  headless: boolean;
 }
 
 export default function CrawlPreviewPage() {
@@ -28,7 +27,7 @@ export default function CrawlPreviewPage() {
     if (stored) {
       const parsed = JSON.parse(stored) as StoredCrawl;
       setUrls(parsed.urls);
-      setStoredMeta({ config: parsed.config, headless: parsed.headless });
+      setStoredMeta({ config: parsed.config });
     }
     setHydrated(true);
   }, [scanId]);
@@ -41,7 +40,7 @@ export default function CrawlPreviewPage() {
       const res = await fetch("/api/scan/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Send config + headless so the server can recreate the job if the
+        // Send config so the server can recreate the job if the
         // in-memory queue was cleared (e.g. by a dev-server hot reload)
         body: JSON.stringify({ scanId, selectedUrls, ...storedMeta }),
       });

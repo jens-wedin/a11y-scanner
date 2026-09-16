@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.7.0] — 2026-09-16
+
+### Removed
+
+- **Bot-detection evasion and CAPTCHA bypass (DEC-1):** Deleted `lib/turnstile.ts`, which detected Cloudflare Turnstile widgets, clicked the checkbox and polled for the `cf_clearance` cookie. Dropped `puppeteer-extra-plugin-stealth` and `playwright-extra`, and switched `playwright` off the `rebrowser-playwright` alias back to the upstream package (34 packages removed). Gone with them: the spoofed Chrome 131 user-agent, the `navigator.webdriver` override, `--disable-blink-features=AutomationControlled`, the `alwaysIsolated` rebrowser patch mode, randomised "human-like" navigation delays, and the visible-browser retry that existed to get past blocks.
+
+  The scanner now identifies itself as `A11yScanner/0.7 (+https://studiomanfred.com/a11y-scanner; accessibility auditing)` and pauses a fixed second between navigations out of politeness rather than camouflage. Sites that block it should be asked for an allowlist entry — see the README.
+
+- **Client-controllable `headless` flag:** `/api/scan/start` accepted `headless` from the request body, letting a caller force a visible browser on the server. The flag existed only to support the evasion retry and has been removed throughout.
+
+### Changed
 
 ### Security
 

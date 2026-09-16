@@ -45,10 +45,9 @@ export default function HomePage() {
         throw new Error(data.error ?? "Crawl failed");
       }
 
-      const { scanId, urls, headless } = (await res.json()) as {
+      const { scanId, urls } = (await res.json()) as {
         scanId: string;
         urls: CrawledUrl[];
-        headless: boolean;
       };
 
       // Store URLs + config in sessionStorage so the preview page can recreate
@@ -56,7 +55,7 @@ export default function HomePage() {
       clearInterval(msgInterval);
       sessionStorage.setItem(
         `crawl-${scanId}`,
-        JSON.stringify({ urls, config, headless })
+        JSON.stringify({ urls, config })
       );
       router.push(`/crawl/${scanId}`);
     } catch (err) {

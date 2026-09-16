@@ -74,7 +74,7 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
     });
 
     // 1. Crawl
-    const { urls, headless } = await crawl(
+    const urls = await crawl(
       schedule.config.targetUrl,
       schedule.config.maxPages,
       schedule.config.maxDepth
@@ -82,7 +82,6 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
     updateJob(scanId, {
       status: "scanning",
       crawledUrls: urls,
-      headless,
       progress: { scannedCount: 0, totalCount: urls.length },
     });
 
@@ -94,8 +93,7 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
       () => {
         scannedCount++;
         updateJob(scanId, { progress: { scannedCount, totalCount: urls.length } });
-      },
-      headless
+      }
     );
 
     // 3. Analyse

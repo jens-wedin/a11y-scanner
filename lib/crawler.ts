@@ -1,7 +1,5 @@
-import { launchBrowser, createStealthContext, randomDelay } from "./browser";
-import { handleTurnstile } from "./turnstile";
+import { launchBrowser, createContext, crawlDelay } from "./browser";
 import { assertScannableUrl, BlockedUrlError } from "./url-guard";
-import type { Page } from "playwright-core";
 import type { CrawledUrl } from "./types";
 
 export function isSameDomain(url: string, origin: string): boolean {
@@ -26,61 +24,10 @@ export function normalizeUrl(url: string): string {
   }
 }
 
-/**
- * Wait for a Cloudflare or similar challenge page to resolve.
- * If a Turnstile widget is detected, attempts to click the checkbox.
- * Polls the page for up to `maxWait` ms, checking if the URL has changed
- * (redirect after challenge) or if real page content has appeared.
- */
-async function waitForChallenge(
-  page: Page,
-  originalUrl: string,
-  maxWait = 20000
-): Promise<void> {
-  const start = Date.now();
-  const interval = 1000;
-  let turnstileAttempted = false;
-
-  while (Date.now() - start < maxWait) {
-    // Check if we've been redirected (challenge completed)
-    const currentUrl = page.url();
-    if (currentUrl !== originalUrl && !currentUrl.includes("challenge")) {
-      return;
-    }
-
-    // Check if the page has real content (not a challenge page)
-    const isChallenge = await page.evaluate(() => {
-      const body = document.body?.innerText ?? "";
-      const title = document.title?.toLowerCase() ?? "";
-      if (title.includes("just a moment") || title.includes("attention required"))
-        return true;
-      if (body.includes("Checking your browser") || body.includes("Please wait"))
-        return true;
-      return false;
-    }).catch(() => false);
-
-    if (!isChallenge) return;
-
-    // Try clicking the Turnstile checkbox once
-    if (!turnstileAttempted) {
-      turnstileAttempted = true;
-      const solved = await handleTurnstile(page);
-      if (solved) {
-        // Give the page a moment to reload after solving
-        await new Promise((r) => setTimeout(r, 2000));
-        return;
-      }
-    }
-
-    await new Promise((r) => setTimeout(r, interval));
-  }
-}
-
 async function runCrawl(
   startUrl: string,
   maxPages: number,
-  maxDepth: number | undefined,
-  headless: boolean
+  maxDepth: number | undefined
 ): Promise<CrawledUrl[]> {
   const origin = new URL(startUrl).origin;
   const visited = new Set<string>();
@@ -89,8 +36,8 @@ async function runCrawl(
     { url: normalizeUrl(startUrl), depth: 0 },
   ];
 
-  const browser = await launchBrowser(headless);
-  const context = await createStealthContext(browser);
+  const browser = await launchBrowser();
+  const context = await createContext(browser);
   const page = await context.newPage();
 
   try {
@@ -113,24 +60,16 @@ async function runCrawl(
         throw err;
       }
 
-      // Add a random delay between navigations to avoid bot detection
+      // Politeness pause so a scan does not hammer the target.
       if (!isFirstPage) {
-        await randomDelay(1000, 3000);
+        await crawlDelay();
       }
 
       try {
         const response = await page.goto(url, {
-          // Use networkidle for the first page so Cloudflare challenge
-          // pages can complete their redirect. Faster domcontentloaded
-          // for subsequent pages.
-          waitUntil: isFirstPage ? "networkidle" : "domcontentloaded",
-          timeout: isFirstPage ? 45000 : 15000,
+          waitUntil: "domcontentloaded",
+          timeout: isFirstPage ? 30000 : 15000,
         });
-
-        // If this is the first page, check for challenge pages and wait
-        if (isFirstPage) {
-          await waitForChallenge(page, url);
-        }
 
         isFirstPage = false;
 
@@ -150,15 +89,9 @@ async function runCrawl(
           }
         }
 
-        // Consider it successful if we ended up on a real page
-        // (challenge pages redirect, so the final URL differs from a blocked response)
-        const isOk =
-          (response?.ok() ?? false) ||
-          (finalUrl !== url && !finalUrl.includes("challenge"));
-
-        if (!isOk) {
+        if (!(response?.ok() ?? false)) {
           if (result.length === 0 && visited.size === 1) {
-            throw new Error(`BOT_PROTECTION:${finalStatus}`);
+            throw new Error(`BLOCKED:${finalStatus}`);
           }
           continue;
         }
@@ -186,14 +119,12 @@ async function runCrawl(
           }
         }
       } catch (err) {
-        // Re-throw bot-protection errors so the caller can handle them
-        if (err instanceof Error && err.message.startsWith("BOT_PROTECTION:")) {
+        if (err instanceof Error && err.message.startsWith("BLOCKED:")) {
           throw err;
         }
-        // If the very first page fails for any reason (timeout, network error, etc.),
-        // treat it like bot protection to trigger the headless=false retry
+        // If the seed page itself fails there is nothing to crawl.
         if (result.length === 0 && visited.size === 1) {
-          throw new Error("BOT_PROTECTION:0");
+          throw new Error("BLOCKED:0");
         }
         // Skip individual unreachable pages silently
       }
@@ -209,34 +140,19 @@ export async function crawl(
   startUrl: string,
   maxPages: number,
   maxDepth?: number
-): Promise<{ urls: CrawledUrl[]; headless: boolean }> {
-  // Validate before launching anything, and outside the retry below, so a
-  // blocked URL surfaces as itself rather than as "no pages discovered".
+): Promise<CrawledUrl[]> {
+  // Validated before anything launches, so a blocked URL surfaces as itself.
   await assertScannableUrl(startUrl);
 
-  try {
-    const urls = await runCrawl(startUrl, maxPages, maxDepth, true);
-    return { urls, headless: true };
-  } catch (err) {
-    if (err instanceof Error && err.message.startsWith("BOT_PROTECTION:")) {
-      // Retry with a visible browser — bypasses most bot protection (Cloudflare etc.)
-      try {
-        const urls = await runCrawl(startUrl, maxPages, maxDepth, false);
-        if (urls.length === 0) {
-          throw new Error(
-            "No pages could be discovered. The site may be behind a paywall, " +
-              "using Cloudflare protection, or blocking automated access."
-          );
-        }
-        return { urls, headless: false };
-      } catch (retryErr) {
-        // If the visible browser also fails, give a clear message
-        throw new Error(
-          "No pages could be discovered. The site may be behind a paywall, " +
-            "using Cloudflare protection, or blocking automated access."
-        );
-      }
-    }
-    throw err;
+  const urls = await runCrawl(startUrl, maxPages, maxDepth);
+
+  if (urls.length === 0) {
+    throw new Error(
+      "No pages could be discovered. Check the URL is reachable, and that the " +
+        "site permits automated accessibility scanning — see the allowlist " +
+        "guidance in the README."
+    );
   }
+
+  return urls;
 }

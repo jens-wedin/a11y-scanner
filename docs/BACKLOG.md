@@ -120,7 +120,7 @@ no report — but it is no longer silent.
 ## P1 — Fix before next release (continued)
 
 ### DEC-1 — Decide the position on bot-detection evasion
-**Status:** TODO · **Where:** `lib/turnstile.ts`, `lib/browser.ts`, `package.json:25-27`
+**Status:** DONE (2026-09-16) — chose option 1, removed entirely · **Where:** `lib/turnstile.ts`, `lib/browser.ts`, `package.json:25-27`
 
 **Raised from P2 on 2026-09-16.** The trigger was a cold sales email: *"I went
 through jens-wedin/a11y-scanner and spotted puppeteer stealth. still building
@@ -166,12 +166,15 @@ let the site owner allowlist the crawler.
 3. **Keep as-is** — accept the legal and reputational exposure. Document that decision.
 
 **Acceptance criteria**
-- [ ] Decision made and recorded here with a date
-- [ ] README's "Anti-bot hardening" section rewritten to match reality (see DOC-1)
-- [ ] If (1): stealth deps removed, crawler works against a consenting test site
+- [x] **Decision (2026-09-16, Jens): option 1 — remove it entirely.**
+- [x] `lib/turnstile.ts` deleted; `puppeteer-extra-plugin-stealth`, `playwright-extra` and the `rebrowser-playwright` alias removed (34 packages)
+- [x] Honest user-agent, fixed politeness delay, no fingerprint spoofing
+- [x] Client-controllable `headless` flag removed throughout
+- [x] README rewritten (DOC-1)
+- [ ] Crawler verified against a consenting test site — needs a real run, see DEP-2
 
 ### DOC-1 — Stop advertising the evasion stack in public docs
-**Status:** TODO · **Where:** `README.md:7`, `README.md:70`, `README.md:102`, `CHANGELOG.md:49`, `CHANGELOG.md:58`
+**Status:** DONE (2026-09-16) · **Where:** `README.md:7`, `README.md:70`, `README.md:102`, `CHANGELOG.md:49`, `CHANGELOG.md:58`
 
 `README.md:7` documents the whole stack in detail — `playwright-extra` with
 "~10 evasion techniques", the `rebrowser-playwright` Runtime.Enable patch,
@@ -184,9 +187,10 @@ Blocked on DEC-1 — if the stack is removed, this resolves itself. If it is kep
 the docs still shouldn't read as a capability pitch.
 
 **Acceptance criteria**
-- [ ] README describes what the scanner does, not how it avoids detection
-- [ ] CHANGELOG entries kept honest but not promotional
-- [ ] Consider making the repo private until DEC-1 is settled
+- [x] README describes what the scanner does; the evasion paragraph is gone
+- [x] Added a "Scanning sites you do not own" section pointing at consent and allowlisting
+- [x] CHANGELOG records the removal and the reasoning honestly
+- [x] Repo can stay public — there is no longer anything in it that misrepresents the project
 
 ---
 

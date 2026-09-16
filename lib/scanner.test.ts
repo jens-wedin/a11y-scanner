@@ -16,8 +16,7 @@ describe("scanPages — SSRF guard", () => {
         "http://169.254.169.254/latest/meta-data/",
         "http://127.0.0.1:6379/",
       ],
-      (r) => seen.push(r),
-      true
+      (r) => seen.push(r)
     );
 
     expect(results).toHaveLength(3);
@@ -29,7 +28,7 @@ describe("scanPages — SSRF guard", () => {
   }, 5000);
 
   it("returns no results for an empty URL list", async () => {
-    const results = await scanPages([], () => {}, true);
+    const results = await scanPages([], () => {});
     expect(results).toEqual([]);
   }, 5000);
 });
