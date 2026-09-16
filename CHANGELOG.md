@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Security
+
+- **SSRF in scan targets (SEC-1):** `new URL()` was the only validation on user-supplied scan URLs, which accepts `file://`, `javascript:`, cloud-metadata addresses (`169.254.169.254`) and every RFC1918 range. The server-side browser navigated there and scraped HTML reached the report. Adds `lib/url-guard.ts` with a scheme allowlist and IPv4/IPv6 address classification, resolving hostnames through `dns.lookup` so `/etc/hosts` entries and DNS rebinding are caught. Enforced at crawl entry, every navigation, after redirects, and in `scanPages()` — which is independently reachable via `/api/scan/start`. Blocked targets now return 400 rather than 500.
+- **HTML injection in scheduled-report emails (SEC-3):** `lib/scheduler.ts` built its own email template and interpolated `schedule.name` and `config.targetUrl` unescaped, missed by the 0.6.1 fix. Both now use the shared `escapeHtml` helper.
+
 ## [0.6.1] — 2026-03-22
 
 ### Fixed
 
-- **HTML injection in email reports:** Escaped all user-controlled fields (`targetUrl`, issue titles, WCAG criteria, severity labels) before interpolating into email HTML templates, preventing malicious page content from injecting HTML into outbound emails
+- **HTML injection in email reports:** Escaped user-controlled fields (`targetUrl`, issue titles, WCAG criteria, severity labels) before interpolating into `lib/report-email.ts` templates, preventing malicious page content from injecting HTML into outbound emails. *(Corrected 2026-09-16: this did not cover `lib/scheduler.ts`, which kept its own unescaped template until SEC-3 below.)*
 - **Timer leak in EmailReportDialog:** Auto-close `setTimeout` is now tracked in a `useRef` and cancelled on unmount, preventing state updates on an unmounted component
 
 ## [0.6.0] — 2026-03-14

@@ -7,6 +7,7 @@ import { analyzeViolations } from "./analyzer";
 import { saveScanReport, computeSummary } from "./report";
 import { createJob, updateJob } from "./queue";
 import { getResendClient } from "./resend";
+import { escapeHtml } from "./report-email";
 import type { Schedule } from "./types";
 
 // Map from schedule ID to its active cron task
@@ -26,8 +27,8 @@ export function buildEmailHtml(
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
   return `
     <h2>Accessibility Scan Complete</h2>
-    <p><strong>Schedule:</strong> ${schedule.name}</p>
-    <p><strong>Site:</strong> ${schedule.config.targetUrl}</p>
+    <p><strong>Schedule:</strong> ${escapeHtml(schedule.name)}</p>
+    <p><strong>Site:</strong> ${escapeHtml(schedule.config.targetUrl)}</p>
     <p><strong>Total issues:</strong> ${summary.totalIssues}</p>
     <p><strong>Critical:</strong> ${summary.criticalCount} &nbsp; <strong>Serious:</strong> ${summary.seriousCount}</p>
     <p><a href="${baseUrl}/report/${scanId}">View full report →</a></p>

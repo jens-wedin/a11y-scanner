@@ -52,7 +52,7 @@ delivers the contents out-of-band from your verified Resend domain.
 ## P1 — Fix before next release
 
 ### SEC-3 — Escape HTML in scheduled-report emails
-**Status:** TODO · **Where:** `lib/scheduler.ts:29-33`
+**Status:** DONE (2026-09-16) · **Where:** `lib/scheduler.ts:29-33`
 
 `schedule.name` and `schedule.config.targetUrl` are interpolated raw into email
 HTML. Commit `a8a974a` added `escapeHtml` in `lib/report-email.ts:3-10` but
@@ -64,11 +64,11 @@ and `notification.email` to a victim; the next cron fire sends attacker-authored
 HTML from your SPF/DKIM-signed domain.
 
 **Acceptance criteria**
-- [ ] `escapeHtml` exported from `lib/report-email.ts` and reused (not duplicated)
-- [ ] Applied to `schedule.name` and `schedule.config.targetUrl` in `buildEmailHtml`
-- [ ] Repo-wide grep confirms no third unescaped template
-- [ ] Test asserts `<script>` / `<a>` in a schedule name comes out escaped
-- [ ] CHANGELOG 0.6.1 entry corrected
+- [x] `escapeHtml` exported from `lib/report-email.ts` and reused (not duplicated)
+- [x] Applied to `schedule.name` and `schedule.config.targetUrl` in `buildEmailHtml`
+- [x] Repo-wide grep confirms no third unescaped template — remaining interpolations are numeric counts from `computeSummary`
+- [x] Tests assert `<script>` / `<a>` / `<img onerror>` in a schedule name and target URL come out escaped
+- [x] CHANGELOG 0.6.1 entry corrected, `[Unreleased]` section added
 
 ### SEC-4 — Validate schedule updates (mass assignment)
 **Status:** TODO · **Where:** `app/api/schedules/[id]/route.ts:16-30`, `lib/schedules.ts:46`

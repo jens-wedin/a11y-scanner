@@ -1,6 +1,7 @@
 import type { ScanReport } from "./types";
 
-function escapeHtml(s: string): string {
+/** Escapes text for interpolation into email HTML. Shared with lib/scheduler.ts. */
+export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

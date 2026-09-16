@@ -97,3 +97,32 @@ describe("sendEmail", () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 });
+
+describe("buildEmailHtml — HTML escaping (SEC-3)", () => {
+  const hostile: Schedule = {
+    ...testSchedule,
+    name: '<script>alert(1)</script><a href="https://evil/reset">Verify account</a>',
+    config: {
+      ...testSchedule.config,
+      targetUrl: 'https://example.com/"><img src=x onerror=alert(1)>',
+    },
+  };
+
+  it("escapes angle brackets in the schedule name", () => {
+    const html = buildEmailHtml(hostile, "scan-123", testSummary);
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain('<a href="https://evil/reset">');
+    expect(html).toContain("&lt;script&gt;");
+  });
+
+  it("escapes quotes and brackets in the target URL", () => {
+    const html = buildEmailHtml(hostile, "scan-123", testSummary);
+    expect(html).not.toContain("<img src=x");
+    expect(html).toContain("&lt;img");
+  });
+
+  it("still renders benign names unchanged", () => {
+    const html = buildEmailHtml(testSchedule, "scan-123", testSummary);
+    expect(html).toContain("Nightly scan");
+  });
+});
