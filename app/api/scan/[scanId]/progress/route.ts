@@ -13,7 +13,10 @@ import { saveScanReport, computeSummary } from "@/lib/report";
 import type { ScanReport } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+// The scan runs inside this SSE invocation. 300s (the default) is not enough:
+// 200 pages at ~1s politeness delay plus load and axe-core exceeds it before the
+// analysis step. 1800s is the platform maximum.
+export const maxDuration = 1800;
 
 export async function GET(
   _request: NextRequest,
