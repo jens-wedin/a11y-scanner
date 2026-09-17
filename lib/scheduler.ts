@@ -63,9 +63,9 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
   const startedAt = new Date().toISOString();
 
   try {
-    updateSchedule(schedule.id, { runningAt: startedAt });
+    await updateSchedule(schedule.id, { runningAt: startedAt });
 
-    createJob({
+    await createJob({
       id: scanId,
       status: "crawling",
       config: schedule.config,
@@ -79,7 +79,7 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
       schedule.config.maxPages,
       schedule.config.maxDepth
     );
-    updateJob(scanId, {
+    await updateJob(scanId, {
       status: "scanning",
       crawledUrls: urls,
       progress: { scannedCount: 0, totalCount: urls.length },
@@ -90,14 +90,14 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
     let scannedCount = 0;
     const pageResults = await scanPages(
       urlStrings,
-      () => {
+      async () => {
         scannedCount++;
-        updateJob(scanId, { progress: { scannedCount, totalCount: urls.length } });
+        await updateJob(scanId, { progress: { scannedCount, totalCount: urls.length } });
       }
     );
 
     // 3. Analyse
-    updateJob(scanId, { status: "analyzing" });
+    await updateJob(scanId, { status: "analyzing" });
     const issues = await analyzeViolations(pageResults, schedule.config.targetUrl);
     const summary = computeSummary(issues);
 
@@ -112,8 +112,8 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
     };
 
     // 4. Save
-    saveScanReport(scanId, report);
-    updateJob(scanId, { status: "done", report });
+    await saveScanReport(scanId, report);
+    await updateJob(scanId, { status: "done", report });
 
     // 5. Update schedule metadata
     const lastRunSummary: RunSummary = {
@@ -121,7 +121,7 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
       criticalCount: summary.bySeverity.critical,
       seriousCount: summary.bySeverity.serious,
     };
-    updateSchedule(schedule.id, {
+    await updateSchedule(schedule.id, {
       lastRunAt: new Date().toISOString(),
       lastScanId: scanId,
       lastRunSummary,
@@ -133,11 +133,11 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
       await sendEmail(schedule, scanId, lastRunSummary);
     }
   } catch (err) {
-    updateJob(scanId, {
+    await updateJob(scanId, {
       status: "error",
       error: err instanceof Error ? err.message : "Scheduled scan failed",
     });
-    updateSchedule(schedule.id, { lastRunAt: new Date().toISOString(), runningAt: undefined });
+    await updateSchedule(schedule.id, { lastRunAt: new Date().toISOString(), runningAt: undefined });
   }
 }
 
@@ -168,8 +168,8 @@ export function unregisterSchedule(id: string): void {
   }
 }
 
-export function initScheduler(): void {
-  const schedules = loadSchedules();
+export async function initScheduler(): Promise<void> {
+  const schedules = await loadSchedules();
   const active = schedules.filter((s) => s.enabled).length;
   console.log(`[scheduler] Initialising — registering ${active} active schedules`);
   for (const schedule of schedules) {
@@ -178,7 +178,7 @@ export function initScheduler(): void {
 }
 
 export async function triggerNow(scheduleId: string): Promise<void> {
-  const schedule = getSchedule(scheduleId);
+  const schedule = await getSchedule(scheduleId);
   if (!schedule) throw new Error("Schedule not found");
   // Run in background — don't await
   runScheduledScan({ ...schedule }).catch(console.error);

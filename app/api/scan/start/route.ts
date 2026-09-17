@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let job = getJob(scanId);
+    let job = await getJob(scanId);
 
     // Recreate the job if the in-memory queue was cleared (e.g. dev hot reload)
     if (!job) {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         url,
         depth: 0,
       }));
-      createJob({
+      await createJob({
         id: scanId,
         status: "pending",
         config,
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         progress: { scannedCount: 0, totalCount: crawledUrls.length },
         crawledUrls,
       });
-      job = getJob(scanId)!;
+      job = (await getJob(scanId))!;
     }
 
     if (job.status !== "pending") {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (selectedUrls && selectedUrls.length > 0 && job.crawledUrls) {
       const selectedSet = new Set(selectedUrls);
       const filtered = job.crawledUrls.filter((u) => selectedSet.has(u.url));
-      updateJob(scanId, {
+      await updateJob(scanId, {
         config: { ...job.config, selectedUrls },
         crawledUrls: filtered,
         progress: { scannedCount: 0, totalCount: filtered.length },
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark as scanning — SSE consumer will start the scan when it connects
-    updateJob(scanId, { status: "scanning" });
+    await updateJob(scanId, { status: "scanning" });
 
     return NextResponse.json({ scanId, status: "scanning" });
   } catch (err) {

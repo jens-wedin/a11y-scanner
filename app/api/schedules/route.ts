@@ -5,7 +5,7 @@ import { assertScannableUrl, BlockedUrlError } from "@/lib/url-guard";
 import cron from "node-cron";
 
 export async function GET() {
-  return NextResponse.json(loadSchedules());
+  return NextResponse.json(await loadSchedules());
 }
 
 export async function POST(request: NextRequest) {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     throw err;
   }
 
-  const schedule = createSchedule({ name, cronExpression, config, enabled: true, notification });
+  const schedule = await createSchedule({ name, cronExpression, config, enabled: true, notification });
   registerSchedule(schedule);
 
   return NextResponse.json(schedule, { status: 201 });

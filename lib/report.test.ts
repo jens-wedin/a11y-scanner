@@ -1,10 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import * as fs from "fs";
-import * as path from "path";
+import { describe, it, expect, beforeEach } from "vitest";
 import { saveScanReport, loadScanReport, computeSummary } from "./report";
+import { getSql, ensureSchema } from "./db";
 import type { ScanReport } from "./types";
 
-const REPORTS_DIR = path.join(process.cwd(), "reports");
 const VALID_ID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
 const report: ScanReport = {
@@ -17,45 +15,83 @@ const report: ScanReport = {
   summary: computeSummary([]),
 };
 
-describe("loadScanReport — scanId validation (SEC-5)", () => {
-  const decoy = path.join(process.cwd(), "decoy-secret.json");
-
-  beforeEach(() => {
-    fs.writeFileSync(decoy, JSON.stringify({ secret: "leaked" }), "utf-8");
+describe("report persistence (Postgres)", () => {
+  beforeEach(async () => {
+    await ensureSchema();
+    await getSql()`delete from reports`;
   });
 
-  afterEach(() => {
-    if (fs.existsSync(decoy)) fs.unlinkSync(decoy);
-    const saved = path.join(REPORTS_DIR, `${VALID_ID}.json`);
-    if (fs.existsSync(saved)) fs.unlinkSync(saved);
+  it("round-trips a report", async () => {
+    await saveScanReport(VALID_ID, report);
+    const loaded = await loadScanReport(VALID_ID);
+    expect(loaded?.targetUrl).toBe("https://example.com");
+    expect(loaded?.scanId).toBe(VALID_ID);
   });
 
-  it("refuses a scanId that traverses out of the reports directory", () => {
-    expect(loadScanReport("../decoy-secret")).toBeNull();
+  it("returns null for an unknown scanId", async () => {
+    expect(
+      await loadScanReport("55555555-5555-4555-8555-555555555555")
+    ).toBeNull();
   });
 
-  it("refuses a deeper traversal", () => {
-    expect(loadScanReport("../../../../etc/hosts")).toBeNull();
+  it("overwrites an existing report for the same scanId", async () => {
+    await saveScanReport(VALID_ID, report);
+    await saveScanReport(VALID_ID, { ...report, pagesScanned: 42 });
+    expect((await loadScanReport(VALID_ID))?.pagesScanned).toBe(42);
   });
 
-  it("refuses an absolute path", () => {
-    expect(loadScanReport("/etc/hosts")).toBeNull();
+  it("preserves nested issue data through the round-trip", async () => {
+    const withIssue: ScanReport = {
+      ...report,
+      issues: [
+        {
+          id: "image-alt",
+          title: "Images missing alt text",
+          description: "d",
+          wcagCriterion: "1.1.1 Non-text Content",
+          wcagLevel: "A",
+          wcagDocUrl: "https://example.com/wcag",
+          eaaRisk: "high",
+          businessImpact: "b",
+          fixComplexity: "low",
+          affectedPages: ["https://example.com/"],
+          occurrenceCount: 3,
+          severity: "critical",
+          codeExample: '<img src="a.png">',
+          recommendedFix: '<img src="a.png" alt="A">',
+        },
+      ],
+    };
+    await saveScanReport(VALID_ID, withIssue);
+    const loaded = await loadScanReport(VALID_ID);
+    expect(loaded?.issues).toHaveLength(1);
+    expect(loaded?.issues[0].codeExample).toBe('<img src="a.png">');
   });
 
-  it("refuses a non-UUID id", () => {
-    expect(loadScanReport("not-a-uuid")).toBeNull();
+  // SEC-5 held: a scanId reaches storage from a route param.
+  it("refuses a non-UUID scanId on read", async () => {
+    expect(await loadScanReport("../decoy-secret")).toBeNull();
+    expect(await loadScanReport("not-a-uuid")).toBeNull();
   });
 
-  it("still loads a report saved under a valid UUID", () => {
-    saveScanReport(VALID_ID, report);
-    expect(loadScanReport(VALID_ID)?.targetUrl).toBe("https://example.com");
+  it("refuses a non-UUID scanId on write", async () => {
+    await expect(saveScanReport("../decoy-secret", report)).rejects.toThrow();
   });
 
-  it("refuses to save under a traversing scanId", () => {
-    expect(() => saveScanReport("../decoy-secret", report)).toThrow();
-    // the decoy must still hold its original contents
-    expect(JSON.parse(fs.readFileSync(decoy, "utf-8"))).toEqual({
-      secret: "leaked",
-    });
+  it("does not write anything to the local filesystem", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    await saveScanReport(VALID_ID, report);
+    expect(fs.existsSync(path.join(process.cwd(), "reports", `${VALID_ID}.json`))).toBe(
+      false
+    );
+  });
+});
+
+describe("computeSummary", () => {
+  it("counts an empty issue list as zero", () => {
+    const s = computeSummary([]);
+    expect(s.totalIssues).toBe(0);
+    expect(s.bySeverity.critical).toBe(0);
   });
 });

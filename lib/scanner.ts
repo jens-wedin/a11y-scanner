@@ -6,7 +6,7 @@ import type { RawPageResult } from "./types";
 
 export async function scanPages(
   urls: string[],
-  onProgress: (result: RawPageResult) => void
+  onProgress: (result: RawPageResult) => void | Promise<void>
 ): Promise<RawPageResult[]> {
   // The scanner is reachable independently of the crawler (/api/scan/start
   // accepts caller-supplied selectedUrls), so it validates its own input.
@@ -28,7 +28,7 @@ export async function scanPages(
     }
   }
 
-  for (const result of rejected) onProgress(result);
+  for (const result of rejected) await onProgress(result);
 
   // Nothing survived validation — don't pay for a browser launch.
   if (allowed.length === 0) return rejected;
@@ -80,7 +80,7 @@ export async function scanPages(
             };
 
             results.push(result);
-            onProgress(result);
+            await onProgress(result);
           } catch (err) {
             const result: RawPageResult = {
               url,
@@ -89,7 +89,7 @@ export async function scanPages(
               error: err instanceof Error ? err.message : "Scan failed",
             };
             results.push(result);
-            onProgress(result);
+            await onProgress(result);
           } finally {
             await context.close();
           }

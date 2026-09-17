@@ -56,8 +56,8 @@ export async function POST(
   }
 
   // Load report
-  const job = getJob(scanId);
-  const report = job?.report ?? loadScanReport(scanId);
+  const job = await getJob(scanId);
+  const report = job?.report ?? await loadScanReport(scanId);
 
   if (!report) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });

@@ -5,6 +5,6 @@ export async function register() {
     reportEnvironment();
 
     const { initScheduler } = await import("./lib/scheduler");
-    initScheduler();
+    await initScheduler();
   }
 }

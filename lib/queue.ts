@@ -1,41 +1,64 @@
+import { getSql, ensureSchema } from "./db";
 import type { ScanJob, ScanEvent } from "./types";
 
-// In-memory job store (suitable for local-first; replace with Redis/DB for multi-instance deployment)
-const jobs = new Map<string, ScanJob>();
-
-// SSE stream controllers keyed by scanId
+/**
+ * Job state lives in Postgres: /api/scan/start and the SSE progress route are
+ * separate invocations, and Fluid Compute guarantees no instance affinity, so a
+ * module-scope Map produced intermittent "Scan job not found".
+ *
+ * SSE controllers stay in memory deliberately — a ReadableStream controller
+ * cannot be serialised, and it does not need to be: the scan runs inside the
+ * same invocation that holds the stream open.
+ */
 const controllers = new Map<
   string,
   ReadableStreamDefaultController<Uint8Array>
 >();
 
-export function createJob(job: ScanJob): void {
-  jobs.set(job.id, job);
+export async function createJob(job: ScanJob): Promise<void> {
+  await ensureSchema();
+  await getSql()`
+    insert into scan_jobs (id, data) values (${job.id}, ${JSON.stringify(job)})
+    on conflict (id) do update set data = excluded.data, updated_at = now()
+  `;
 }
 
-export function getJob(id: string): ScanJob | undefined {
-  return jobs.get(id);
+export async function getJob(id: string): Promise<ScanJob | undefined> {
+  await ensureSchema();
+  const rows = await getSql()`select data from scan_jobs where id = ${id}`;
+  return rows.length ? (rows[0].data as ScanJob) : undefined;
 }
 
-export function updateJob(id: string, updates: Partial<ScanJob>): void {
-  const job = jobs.get(id);
+export async function updateJob(
+  id: string,
+  updates: Partial<ScanJob>
+): Promise<void> {
+  const job = await getJob(id);
   if (!job) return;
-  jobs.set(id, {
+
+  const merged: ScanJob = {
     ...job,
     ...updates,
     progress: updates.progress
       ? { ...job.progress, ...updates.progress }
       : job.progress,
-  });
+  };
+
+  await getSql()`
+    update scan_jobs set data = ${JSON.stringify(merged)}, updated_at = now()
+    where id = ${id}
+  `;
 }
 
-export function deleteJob(id: string): void {
-  jobs.delete(id);
+export async function deleteJob(id: string): Promise<void> {
+  await ensureSchema();
+  await getSql()`delete from scan_jobs where id = ${id}`;
 }
 
 /** Test helper only */
-export function clearAllJobs(): void {
-  jobs.clear();
+export async function clearAllJobs(): Promise<void> {
+  await ensureSchema();
+  await getSql()`delete from scan_jobs`;
   controllers.clear();
 }
 

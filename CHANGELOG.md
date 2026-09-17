@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Storage moved to Neon Postgres (OPS-1):** Reports, schedules and scan-job state no longer touch the local filesystem or module memory. Vercel's filesystem is read-only outside `/tmp`, and `/api/scan/start` and the SSE progress route are separate invocations with no instance affinity — a module-scope `Map` produced intermittent "Scan job not found". Records are stored as `jsonb` documents keyed by id, so the domain types are unchanged. SSE controllers deliberately stay in memory: a stream controller cannot be serialised, and the scan runs inside the invocation that holds the stream.
+- **Scan duration and Chromium (OPS-1):** `maxDuration` raised 300 → 1800s (300 was the default, not a platform ceiling — a 200-page scan needs ~10–13 min). Chromium is now installed into `node_modules` at build time via `PLAYWRIGHT_BROWSERS_PATH=0` so it exists in the function bundle.
+
 ### Fixed
+
+- **Non-UUID ids returned 500 instead of 404:** schedule and report ids reach a `uuid` column from route params, where a malformed value raises a Postgres type error rather than matching nothing. Both stores now screen the id shape first.
 
 - **"Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON":** Vercel Deployment Protection answers an unauthenticated API GET with a 302 to its login page. The browser follows it, so the client received a **200 with an HTML body** — `res.ok` was true, the success path ran, and `res.json()` then threw a raw parse error that told the user nothing. Client fetches now go through `lib/fetch-json.ts`, which checks the content type and reports "Your session has expired. Reload the page to sign in again." Also covers empty and malformed bodies, and surfaces the server's `error` field on JSON error responses.
 

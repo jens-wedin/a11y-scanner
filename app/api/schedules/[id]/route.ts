@@ -105,7 +105,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const schedule = getSchedule(id);
+  const schedule = await getSchedule(id);
   if (!schedule) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(schedule);
 }
@@ -116,7 +116,7 @@ export async function PUT(
 ) {
   const { id } = await params;
 
-  if (!getSchedule(id)) {
+  if (!await getSchedule(id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -130,7 +130,7 @@ export async function PUT(
   const result = await buildUpdate(body);
   if ("error" in result) return badRequest(result.error as string);
 
-  const updated = updateSchedule(id, result);
+  const updated = await updateSchedule(id, result);
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Re-register to pick up enabled/cron changes
@@ -146,7 +146,7 @@ export async function DELETE(
 ) {
   const { id } = await params;
   unregisterSchedule(id);
-  const deleted = deleteSchedule(id);
+  const deleted = await deleteSchedule(id);
   if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return new NextResponse(null, { status: 204 });
 }

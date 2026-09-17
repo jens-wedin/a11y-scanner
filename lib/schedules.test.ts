@@ -1,6 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import * as fs from "fs";
-import * as path from "path";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   loadSchedules,
   createSchedule,
@@ -8,56 +6,82 @@ import {
   deleteSchedule,
   getSchedule,
 } from "./schedules";
+import { getSql, ensureSchema } from "./db";
 
-describe("schedules persistence", () => {
-  const originalFile = path.join(process.cwd(), "schedules.json");
+const base = {
+  name: "Test",
+  cronExpression: "0 9 1 * *",
+  config: { targetUrl: "https://example.com", maxPages: 10 as const },
+  enabled: true,
+  notification: {},
+};
 
-  beforeEach(() => {
-    if (fs.existsSync(originalFile)) fs.unlinkSync(originalFile);
+describe("schedules persistence (Postgres)", () => {
+  beforeEach(async () => {
+    await ensureSchema();
+    await getSql()`delete from schedules`;
   });
 
-  afterEach(() => {
-    if (fs.existsSync(originalFile)) fs.unlinkSync(originalFile);
+  it("loadSchedules returns [] when none exist", async () => {
+    expect(await loadSchedules()).toEqual([]);
   });
 
-  it("loadSchedules returns [] when file missing", () => {
-    expect(loadSchedules()).toEqual([]);
-  });
-
-  it("createSchedule persists and returns schedule with id", () => {
-    const s = createSchedule({
-      name: "Test",
-      cronExpression: "0 9 1 * *",
-      config: { targetUrl: "https://example.com", maxPages: 10 },
-      enabled: true,
-      notification: {},
-    });
+  it("createSchedule persists and returns a schedule with an id", async () => {
+    const s = await createSchedule(base);
     expect(s.id).toBeTruthy();
-    expect(loadSchedules()).toHaveLength(1);
+    expect(await loadSchedules()).toHaveLength(1);
   });
 
-  it("updateSchedule modifies an existing schedule", () => {
-    const s = createSchedule({
-      name: "Test",
-      cronExpression: "0 9 1 * *",
-      config: { targetUrl: "https://example.com", maxPages: 10 },
-      enabled: true,
-      notification: {},
-    });
-    const updated = updateSchedule(s.id, { enabled: false });
+  it("getSchedule returns the stored record", async () => {
+    const s = await createSchedule(base);
+    const found = await getSchedule(s.id);
+    expect(found?.name).toBe("Test");
+    expect(found?.config.targetUrl).toBe("https://example.com");
+  });
+
+  it("getSchedule returns undefined for an unknown id", async () => {
+    expect(
+      await getSchedule("22222222-2222-4222-8222-222222222222")
+    ).toBeUndefined();
+  });
+
+  it("updateSchedule modifies an existing schedule", async () => {
+    const s = await createSchedule(base);
+    const updated = await updateSchedule(s.id, { enabled: false });
     expect(updated?.enabled).toBe(false);
-    expect(getSchedule(s.id)?.enabled).toBe(false);
+    expect((await getSchedule(s.id))?.enabled).toBe(false);
   });
 
-  it("deleteSchedule removes schedule", () => {
-    const s = createSchedule({
-      name: "Test",
-      cronExpression: "0 9 1 * *",
-      config: { targetUrl: "https://example.com", maxPages: 10 },
-      enabled: true,
-      notification: {},
-    });
-    expect(deleteSchedule(s.id)).toBe(true);
-    expect(loadSchedules()).toHaveLength(0);
+  it("updateSchedule returns null for an unknown id", async () => {
+    expect(
+      await updateSchedule("33333333-3333-4333-8333-333333333333", { enabled: false })
+    ).toBeNull();
+  });
+
+  it("updateSchedule can clear a field", async () => {
+    const s = await createSchedule(base);
+    await updateSchedule(s.id, { runningAt: new Date().toISOString() });
+    expect((await getSchedule(s.id))?.runningAt).toBeTruthy();
+    await updateSchedule(s.id, { runningAt: undefined });
+    expect((await getSchedule(s.id))?.runningAt).toBeUndefined();
+  });
+
+  it("deleteSchedule removes the schedule", async () => {
+    const s = await createSchedule(base);
+    expect(await deleteSchedule(s.id)).toBe(true);
+    expect(await loadSchedules()).toHaveLength(0);
+  });
+
+  it("deleteSchedule returns false for an unknown id", async () => {
+    expect(
+      await deleteSchedule("44444444-4444-4444-8444-444444444444")
+    ).toBe(false);
+  });
+
+  it("does not write anything to the local filesystem", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    await createSchedule(base);
+    expect(fs.existsSync(path.join(process.cwd(), "schedules.json"))).toBe(false);
   });
 });

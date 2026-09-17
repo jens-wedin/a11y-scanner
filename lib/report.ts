@@ -1,44 +1,45 @@
-import * as fs from "fs";
-import * as path from "path";
+import { getSql, ensureSchema } from "./db";
 import type { ScanReport, A11yIssue } from "./types";
 
-const REPORTS_DIR = path.join(process.cwd(), "reports");
+/**
+ * Reports live in Postgres rather than reports/*.json — Vercel's filesystem is
+ * read-only outside /tmp and is not shared between instances.
+ */
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Scan IDs come from route params and are used to build a file path, so they
- * are constrained to the UUID shape the app actually generates. Anything else
- * — traversal, absolute paths, arbitrary names — is refused.
+ * Scan IDs arrive from route params. The storage layer no longer builds a file
+ * path, so traversal is structurally impossible — but validating keeps the
+ * failure mode a clean null rather than a Postgres type error.
  */
 function isValidScanId(scanId: string): boolean {
   return UUID_RE.test(scanId);
 }
 
-export function ensureReportsDir(): void {
-  if (!fs.existsSync(REPORTS_DIR)) {
-    fs.mkdirSync(REPORTS_DIR, { recursive: true });
-  }
-}
-
-export function saveScanReport(scanId: string, report: ScanReport): void {
+export async function saveScanReport(
+  scanId: string,
+  report: ScanReport
+): Promise<void> {
   if (!isValidScanId(scanId)) {
-    throw new Error(`Refusing to write a report under an invalid scanId: ${scanId}`);
+    throw new Error(`Refusing to store a report under an invalid scanId: ${scanId}`);
   }
-  ensureReportsDir();
-  fs.writeFileSync(
-    path.join(REPORTS_DIR, `${scanId}.json`),
-    JSON.stringify(report, null, 2),
-    "utf-8"
-  );
+  await ensureSchema();
+  await getSql()`
+    insert into reports (scan_id, data)
+    values (${scanId}, ${JSON.stringify(report)})
+    on conflict (scan_id) do update set data = excluded.data
+  `;
 }
 
-export function loadScanReport(scanId: string): ScanReport | null {
+export async function loadScanReport(
+  scanId: string
+): Promise<ScanReport | null> {
   if (!isValidScanId(scanId)) return null;
-  const filePath = path.join(REPORTS_DIR, `${scanId}.json`);
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, "utf-8")) as ScanReport;
+  await ensureSchema();
+  const rows = await getSql()`select data from reports where scan_id = ${scanId}`;
+  return rows.length ? (rows[0].data as ScanReport) : null;
 }
 
 export function computeSummary(issues: A11yIssue[]): ScanReport["summary"] {

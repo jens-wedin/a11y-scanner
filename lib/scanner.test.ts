@@ -16,7 +16,7 @@ describe("scanPages — SSRF guard", () => {
         "http://169.254.169.254/latest/meta-data/",
         "http://127.0.0.1:6379/",
       ],
-      (r) => seen.push(r)
+      (r) => { seen.push(r); }
     );
 
     expect(results).toHaveLength(3);

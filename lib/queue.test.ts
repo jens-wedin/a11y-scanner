@@ -5,8 +5,14 @@ import {
   updateJob,
   deleteJob,
   clearAllJobs,
+  addController,
+  removeController,
+  sendEvent,
 } from "./queue";
+import { ensureSchema } from "./db";
 import type { ScanJob } from "./types";
+
+const ID = "66666666-6666-4666-8666-666666666666";
 
 const makeJob = (id: string): ScanJob => ({
   id,
@@ -16,34 +22,74 @@ const makeJob = (id: string): ScanJob => ({
   progress: { scannedCount: 0, totalCount: 0 },
 });
 
-describe("queue", () => {
-  beforeEach(() => clearAllJobs());
-
-  it("creates and retrieves a job", () => {
-    const job = makeJob("abc");
-    createJob(job);
-    expect(getJob("abc")).toEqual(job);
+describe("queue (Postgres-backed job state)", () => {
+  beforeEach(async () => {
+    await ensureSchema();
+    await clearAllJobs();
   });
 
-  it("returns undefined for unknown job", () => {
-    expect(getJob("nope")).toBeUndefined();
+  it("createJob then getJob round-trips", async () => {
+    await createJob(makeJob(ID));
+    const job = await getJob(ID);
+    expect(job?.id).toBe(ID);
+    expect(job?.status).toBe("pending");
   });
 
-  it("updates job fields", () => {
-    createJob(makeJob("abc"));
-    updateJob("abc", { status: "scanning" });
-    expect(getJob("abc")?.status).toBe("scanning");
+  it("getJob returns undefined for an unknown id", async () => {
+    expect(await getJob("77777777-7777-4777-8777-777777777777")).toBeUndefined();
   });
 
-  it("merges progress fields correctly", () => {
-    createJob(makeJob("abc"));
-    updateJob("abc", { progress: { scannedCount: 5, totalCount: 10 } });
-    expect(getJob("abc")?.progress.scannedCount).toBe(5);
+  it("updateJob merges top-level fields", async () => {
+    await createJob(makeJob(ID));
+    await updateJob(ID, { status: "scanning" });
+    expect((await getJob(ID))?.status).toBe("scanning");
   });
 
-  it("deletes a job", () => {
-    createJob(makeJob("abc"));
-    deleteJob("abc");
-    expect(getJob("abc")).toBeUndefined();
+  it("updateJob merges progress rather than replacing it", async () => {
+    await createJob(makeJob(ID));
+    await updateJob(ID, { progress: { totalCount: 5 } as never });
+    const job = await getJob(ID);
+    expect(job?.progress.totalCount).toBe(5);
+    expect(job?.progress.scannedCount).toBe(0); // preserved
+  });
+
+  it("updateJob is a no-op for an unknown id", async () => {
+    await expect(
+      updateJob("88888888-8888-4888-8888-888888888888", { status: "done" })
+    ).resolves.not.toThrow();
+  });
+
+  it("deleteJob removes the job", async () => {
+    await createJob(makeJob(ID));
+    await deleteJob(ID);
+    expect(await getJob(ID)).toBeUndefined();
+  });
+
+  // Job state must survive a different invocation reading it back — that is the
+  // whole reason it moved out of a module-scope Map.
+  it("job state is visible to a caller that never saw the in-memory write", async () => {
+    await createJob(makeJob(ID));
+    const { getSql } = await import("./db");
+    const rows = await getSql()`select data from scan_jobs where id = ${ID}`;
+    expect((rows[0].data as ScanJob).config.targetUrl).toBe("https://example.com");
+  });
+});
+
+describe("queue SSE controllers (stay in-process)", () => {
+  it("sendEvent to an unknown id does not throw", () => {
+    expect(() => sendEvent("nobody-listening", { type: "analysis-start" })).not.toThrow();
+  });
+
+  it("sendEvent enqueues to a registered controller", () => {
+    const chunks: Uint8Array[] = [];
+    addController(ID, {
+      enqueue: (c: Uint8Array) => chunks.push(c),
+    } as unknown as ReadableStreamDefaultController<Uint8Array>);
+
+    sendEvent(ID, { type: "analysis-start" });
+
+    expect(chunks).toHaveLength(1);
+    expect(new TextDecoder().decode(chunks[0])).toContain("analysis-start");
+    removeController(ID);
   });
 });

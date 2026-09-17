@@ -7,11 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ scanId: string }> }
 ) {
   const { scanId } = await params;
-  const job = getJob(scanId);
+  const job = await getJob(scanId);
 
   if (!job) {
     // Try loading from disk (for reports from previous server restarts)
-    const report = loadScanReport(scanId);
+    const report = await loadScanReport(scanId);
     if (!report)
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     return NextResponse.json(report);

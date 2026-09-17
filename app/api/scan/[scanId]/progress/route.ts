@@ -23,7 +23,7 @@ export async function GET(
   { params }: { params: Promise<{ scanId: string }> }
 ) {
   const { scanId } = await params;
-  const job = getJob(scanId);
+  const job = await getJob(scanId);
 
   if (!job) {
     return new Response("Scan job not found", { status: 404 });
@@ -93,7 +93,7 @@ export async function GET(
 }
 
 async function runScan(scanId: string): Promise<void> {
-  const job = getJob(scanId)!;
+  const job = (await getJob(scanId))!;
   const urls = (job.crawledUrls ?? []).map((u) => u.url);
 
   if (urls.length === 0) {
@@ -106,8 +106,8 @@ async function runScan(scanId: string): Promise<void> {
       issues: [],
       summary: computeSummary([]),
     };
-    saveScanReport(scanId, emptyReport);
-    updateJob(scanId, { status: "done", report: emptyReport });
+    await saveScanReport(scanId, emptyReport);
+    await updateJob(scanId, { status: "done", report: emptyReport });
     sendEvent(scanId, { type: "analysis-complete", report: emptyReport });
     closeStream(scanId);
     return;
@@ -115,9 +115,9 @@ async function runScan(scanId: string): Promise<void> {
 
   // Phase 1: scan each page with axe-core
   let scannedCount = 0;
-  const pageResults = await scanPages(urls, (result) => {
+  const pageResults = await scanPages(urls, async (result) => {
     scannedCount++;
-    updateJob(scanId, {
+    await updateJob(scanId, {
       progress: {
         currentUrl: result.url,
         scannedCount,
@@ -135,7 +135,7 @@ async function runScan(scanId: string): Promise<void> {
 
   // Phase 2: analyse with Claude
   sendEvent(scanId, { type: "analysis-start" });
-  updateJob(scanId, { status: "analyzing" });
+  await updateJob(scanId, { status: "analyzing" });
 
   const issues = await analyzeViolations(pageResults, job.config.targetUrl);
 
@@ -155,8 +155,8 @@ async function runScan(scanId: string): Promise<void> {
     summary: computeSummary(issues),
   };
 
-  saveScanReport(scanId, report);
-  updateJob(scanId, { status: "done", report });
+  await saveScanReport(scanId, report);
+  await updateJob(scanId, { status: "done", report });
   sendEvent(scanId, { type: "analysis-complete", report });
   closeStream(scanId);
 }
