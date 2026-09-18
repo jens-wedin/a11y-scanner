@@ -5,18 +5,14 @@ const nextConfig: NextConfig = {
     "playwright",
     "playwright-core",
     "@axe-core/playwright",
+    "@sparticuz/chromium",
   ],
 
-  // `playwright install` writes the browser into
-  // node_modules/playwright-core/.local-browsers at build time, but nothing
-  // imports a binary, so Next's file tracing drops it and the function fails
-  // with "Executable doesn't exist". Pull the directory in explicitly.
-  // Only the headless shell — we never launch headed. The full chromium build
-  // also ships a macOS .app bundle whose nested structure breaks the tracer.
+  // @sparticuz/chromium ships its browser as brotli blobs under bin/, which
+  // nothing imports, so file tracing would drop them and executablePath()
+  // would resolve to a missing file.
   outputFileTracingIncludes: {
-    "/api/**": [
-      "./node_modules/playwright-core/.local-browsers/chromium_headless_shell-*/**/*",
-    ],
+    "/api/**": ["./node_modules/@sparticuz/chromium/bin/**/*"],
   },
 };
 

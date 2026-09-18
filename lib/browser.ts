@@ -7,13 +7,40 @@ export const USER_AGENT =
 
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 };
 
+/**
+ * Which Chromium build to launch.
+ *
+ * Vercel functions run on Amazon Linux, which does not carry the shared
+ * libraries a stock Playwright Chromium links against — it exits 127 with
+ * "error while loading shared libraries: libnspr4.so". Playwright's own
+ * `install --with-deps` cannot help: it shells out to apt-get, which is not
+ * there either. @sparticuz/chromium is a Lambda-targeted build that bundles
+ * them, so serverless uses that and local development uses Playwright's.
+ */
+export function chromiumStrategy(
+  env: Record<string, string | undefined> = process.env
+): "sparticuz" | "playwright" {
+  if (env.VERCEL || env.AWS_LAMBDA_FUNCTION_NAME) return "sparticuz";
+  return "playwright";
+}
+
 export async function launchBrowser() {
   // Imported lazily on purpose. instrumentation.ts -> scheduler -> crawler
-  // reaches this module at boot, and a top-level playwright import made a
-  // browser packaging fault crash every route, not just the scanning ones.
-  const { chromium } = await import("playwright");
+  // reaches this module at boot, and a top-level browser import made a
+  // packaging fault crash every route, not just the scanning ones.
+  const { chromium } = await import("playwright-core");
 
-  return chromium.launch({
+  if (chromiumStrategy() === "sparticuz") {
+    const sparticuz = (await import("@sparticuz/chromium")).default;
+    return chromium.launch({
+      executablePath: await sparticuz.executablePath(),
+      args: [...sparticuz.args, "--disable-dev-shm-usage"],
+      headless: true,
+    });
+  }
+
+  const { chromium: local } = await import("playwright");
+  return local.launch({
     headless: true,
     args: ["--disable-dev-shm-usage"],
   });
