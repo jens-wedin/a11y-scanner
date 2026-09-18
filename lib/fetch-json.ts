@@ -16,6 +16,27 @@ export class NotJsonError extends Error {
   }
 }
 
+/**
+ * True when the response looks like an authentication gate rather than the app.
+ *
+ * Two signals: an explicit 401/403, or a redirect that landed on another origin
+ * (Vercel Deployment Protection sends the browser to vercel.com/sso-api, and
+ * the browser follows it, so the final status is 200 on a foreign host).
+ */
+function isAuthGate(res: Response): boolean {
+  if (res.status === 401 || res.status === 403) return true;
+
+  try {
+    if (typeof window !== "undefined" && res.url) {
+      return new URL(res.url).origin !== window.location.origin;
+    }
+  } catch {
+    // Unparseable URL — fall through to "not an auth gate".
+  }
+
+  return false;
+}
+
 export async function fetchJson<T = unknown>(
   input: RequestInfo | URL,
   init?: RequestInit
@@ -27,8 +48,18 @@ export async function fetchJson<T = unknown>(
     const body = await res.text();
 
     if (body.trimStart().startsWith("<")) {
+      // An HTML body is ambiguous: it can be an auth gate's login page, but a
+      // crashing function also returns Vercel's HTML error page. Blaming the
+      // session for a 500 sends people to re-authenticate for no reason.
+      if (isAuthGate(res)) {
+        throw new NotJsonError(
+          "Your session has expired. Reload the page to sign in again, then retry."
+        );
+      }
+
       throw new NotJsonError(
-        "Your session has expired. Reload the page to sign in again, then retry."
+        `The server returned an error page (HTTP ${res.status}). Something failed ` +
+          `server-side — check the deployment logs.`
       );
     }
 

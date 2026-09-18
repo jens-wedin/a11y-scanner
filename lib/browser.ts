@@ -1,5 +1,3 @@
-import { chromium } from "playwright";
-
 /**
  * Identifies the scanner honestly. Site owners who want to allow it can match
  * on this string; site owners who want to block it can, too. That is the point.
@@ -10,6 +8,11 @@ export const USER_AGENT =
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 };
 
 export async function launchBrowser() {
+  // Imported lazily on purpose. instrumentation.ts -> scheduler -> crawler
+  // reaches this module at boot, and a top-level playwright import made a
+  // browser packaging fault crash every route, not just the scanning ones.
+  const { chromium } = await import("playwright");
+
   return chromium.launch({
     headless: true,
     args: ["--disable-dev-shm-usage"],

@@ -66,3 +66,43 @@ describe("fetchJson", () => {
     await expect(fetchJson("/api/x")).rejects.toThrow(/503/);
   });
 });
+
+describe("fetchJson — distinguishing an auth gate from a server error", () => {
+  const HTML = "<!DOCTYPE html><html><body>whatever</body></html>";
+
+  // Regression: a Vercel 500 error page is HTML too. Reporting it as an expired
+  // session sent the user to re-authenticate while a function was crashing.
+  it("reports a server error, not a session problem, for a same-origin 5xx HTML page", async () => {
+    stubFetch(
+      mockResponse(HTML, {
+        status: 500,
+        contentType: "text/html",
+        url: "http://localhost:3000/api/crawl",
+      })
+    );
+    await expect(fetchJson("/api/crawl")).rejects.toThrow(/server error|500/i);
+    await expect(fetchJson("/api/crawl")).rejects.not.toThrow(/sign in|session/i);
+  });
+
+  it("still reports a session problem when redirected off-origin", async () => {
+    stubFetch(
+      mockResponse(HTML, {
+        status: 200,
+        contentType: "text/html",
+        url: "https://vercel.com/sso-api?url=...",
+      })
+    );
+    await expect(fetchJson("/api/crawl")).rejects.toThrow(/sign in|session/i);
+  });
+
+  it("reports a session problem on a same-origin 401 HTML page", async () => {
+    stubFetch(
+      mockResponse(HTML, {
+        status: 401,
+        contentType: "text/html",
+        url: "http://localhost:3000/api/crawl",
+      })
+    );
+    await expect(fetchJson("/api/crawl")).rejects.toThrow(/sign in|session/i);
+  });
+});
