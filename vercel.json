@@ -3,6 +3,15 @@
   "functions": {
     "app/api/scan/[scanId]/progress/route.ts": {
       "maxDuration": 1800
+    },
+    "app/api/cron/run-schedules/route.ts": {
+      "maxDuration": 1800
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/run-schedules",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }

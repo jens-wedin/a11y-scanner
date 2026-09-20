@@ -1,6 +1,6 @@
-import cron, { type ScheduledTask } from "node-cron";
 import { v4 as uuidv4 } from "uuid";
 import { loadSchedules, getSchedule, updateSchedule } from "./schedules";
+import { dueSchedules } from "./due";
 import { crawl } from "./crawler";
 import { scanPages } from "./scanner";
 import { analyzeViolations } from "./analyzer";
@@ -9,9 +9,6 @@ import { createJob, updateJob } from "./queue";
 import { getResendClient } from "./resend";
 import { escapeHtml } from "./report-email";
 import type { Schedule } from "./types";
-
-// Map from schedule ID to its active cron task
-const tasks = new Map<string, ScheduledTask>();
 
 export interface RunSummary {
   totalIssues: number;
@@ -141,40 +138,27 @@ async function runScheduledScan(schedule: Schedule): Promise<void> {
   }
 }
 
-export function registerSchedule(schedule: Schedule): void {
-  if (!schedule.enabled) return;
-  if (!cron.validate(schedule.cronExpression)) {
-    console.warn(
-      `[scheduler] Invalid cron expression for "${schedule.name}": ${schedule.cronExpression}`
-    );
-    return;
+/**
+ * Runs every schedule that is currently due. Called by the Vercel Cron route.
+ *
+ * Replaces the old in-process node-cron timers, which never fired on Vercel:
+ * functions are not always-on, so the timers died with the instance.
+ *
+ * Runs are awaited rather than fired and forgotten — the invocation must stay
+ * alive until the scans finish or the platform will freeze them mid-flight.
+ */
+export async function runDueSchedules(now: Date = new Date()): Promise<string[]> {
+  const due = dueSchedules(await loadSchedules(), now);
+
+  for (const schedule of due) {
+    try {
+      await runScheduledScan(schedule);
+    } catch (err) {
+      console.error(`[scheduler] Schedule ${schedule.id} failed:`, err);
+    }
   }
 
-  const task = cron.schedule(schedule.cronExpression, () => {
-    console.log(`[scheduler] Firing schedule "${schedule.name}" (${schedule.id})`);
-    runScheduledScan(schedule).catch((err) =>
-      console.error(`[scheduler] Uncaught error in schedule ${schedule.id}:`, err)
-    );
-  });
-
-  tasks.set(schedule.id, task);
-}
-
-export function unregisterSchedule(id: string): void {
-  const task = tasks.get(id);
-  if (task) {
-    task.stop();
-    tasks.delete(id);
-  }
-}
-
-export async function initScheduler(): Promise<void> {
-  const schedules = await loadSchedules();
-  const active = schedules.filter((s) => s.enabled).length;
-  console.log(`[scheduler] Initialising — registering ${active} active schedules`);
-  for (const schedule of schedules) {
-    registerSchedule(schedule);
-  }
+  return due.map((s) => s.id);
 }
 
 export async function triggerNow(scheduleId: string): Promise<void> {

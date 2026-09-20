@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSchedule, updateSchedule, deleteSchedule } from "@/lib/schedules";
-import { registerSchedule, unregisterSchedule } from "@/lib/scheduler";
 import { assertScannableUrl, BlockedUrlError } from "@/lib/url-guard";
-import cron from "node-cron";
+import { isValidCron } from "@/lib/due";
 import type { Schedule } from "@/lib/types";
 
 const VALID_MAX_PAGES = [10, 50, 100, 200] as const;
@@ -33,7 +32,7 @@ async function buildUpdate(
   if (body.cronExpression !== undefined) {
     if (
       typeof body.cronExpression !== "string" ||
-      !cron.validate(body.cronExpression)
+      !isValidCron(body.cronExpression)
     ) {
       return { error: "Invalid cron expression" };
     }
@@ -133,10 +132,6 @@ export async function PUT(
   const updated = await updateSchedule(id, result);
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Re-register to pick up enabled/cron changes
-  unregisterSchedule(id);
-  registerSchedule(updated);
-
   return NextResponse.json(updated);
 }
 
@@ -145,7 +140,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  unregisterSchedule(id);
   const deleted = await deleteSchedule(id);
   if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return new NextResponse(null, { status: 204 });

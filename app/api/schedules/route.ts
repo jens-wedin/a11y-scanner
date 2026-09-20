@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadSchedules, createSchedule } from "@/lib/schedules";
-import { registerSchedule } from "@/lib/scheduler";
 import { assertScannableUrl, BlockedUrlError } from "@/lib/url-guard";
-import cron from "node-cron";
+import { isValidCron } from "@/lib/due";
 
 export async function GET() {
   return NextResponse.json(await loadSchedules());
@@ -24,7 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!cron.validate(cronExpression)) {
+  if (!isValidCron(cronExpression)) {
     return NextResponse.json({ error: "Invalid cron expression" }, { status: 400 });
   }
 
@@ -38,7 +37,6 @@ export async function POST(request: NextRequest) {
   }
 
   const schedule = await createSchedule({ name, cronExpression, config, enabled: true, notification });
-  registerSchedule(schedule);
 
   return NextResponse.json(schedule, { status: 201 });
 }

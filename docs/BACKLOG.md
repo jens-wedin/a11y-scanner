@@ -235,7 +235,7 @@ Next.js routing made it hard to reach through the HTTP layer, but the function
 is now safe regardless of who calls it.
 
 ### OPS-1 — Make the app actually work on Vercel
-**Status:** TODO — **now blocking the deploy** · **Where:** `lib/queue.ts`, `lib/report.ts`, `lib/schedules.ts`, `instrumentation.ts`, `next.config.ts`
+**Status:** DONE (2026-09-20) — pending one end-to-end scan to confirm · **Where:** `lib/queue.ts`, `lib/report.ts`, `lib/schedules.ts`, `instrumentation.ts`, `next.config.ts`
 
 Verified 2026-09-16: the app builds and would deploy, but scans cannot complete
 on Vercel as written. Four independent blockers:
@@ -262,12 +262,22 @@ minutes. A 200-page scan at one second of politeness delay per page exceeds that
 before axe-core does any work.
 
 **Acceptance criteria**
-- [ ] Storage decision made (Marketplace Postgres, Redis, or Blob) and reports + schedules moved off local disk
-- [ ] Job state moved out of module memory
-- [ ] `node-cron` replaced by Vercel Cron hitting a protected route
-- [ ] Chromium reliably present in the function, verified by a real scan on the deployment
-- [ ] Long scans either chunked across invocations or moved to a runtime without a 5-minute ceiling
-- [ ] Per CLAUDE.md: after deploy, hit one protected API route and confirm it answers 401, not 500
+- [x] Neon Postgres provisioned via Marketplace; reports and schedules moved off local disk
+- [x] Job state moved out of module memory into `scan_jobs`
+- [x] `node-cron` replaced by Vercel Cron hitting `/api/cron/run-schedules`, which fails closed without `CRON_SECRET`
+- [x] Chromium present via `@sparticuz/chromium` — stock Playwright builds exit 127 on Amazon Linux for want of `libnspr4.so`
+- [x] `maxDuration` 1800s; 300 was the default, not a ceiling, so no chunking or runtime change is needed
+- [x] Protected API route answers 401, not 500
+- [ ] One real end-to-end scan on the deployment — the last unverified step
+
+**The runtime question is closed:** Functions are fine. The earlier framing
+("Functions cap at 300s, Services has no ceiling") was wrong — `maxDuration`
+goes to 1800s, which comfortably covers a 200-page scan at ~10–13 min.
+
+**Scheduling design:** `lib/due.ts` decides what is due from the schedule plus
+the current time, as a pure function. Vercel Cron polls every five minutes. A
+`runningAt` older than an hour is treated as abandoned so a crashed run cannot
+wedge a schedule permanently.
 
 **Open question for Jens:** serverless functions are an awkward fit for a
 browser-driven crawl that runs for minutes. Vercel Services (containers) or Vercel

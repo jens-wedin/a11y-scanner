@@ -3,8 +3,5 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { reportEnvironment } = await import("./lib/env-check");
     reportEnvironment();
-
-    const { initScheduler } = await import("./lib/scheduler");
-    await initScheduler();
   }
 }
