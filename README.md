@@ -103,6 +103,7 @@ GET  /api/scan/[id]/progress → SSE stream opens
 | Scanner | Playwright + @axe-core/playwright |
 | AI analysis | Anthropic SDK (`claude-sonnet-4-6`) |
 | PDF export | @react-pdf/renderer |
+| CSV export | `lib/csv.ts` — one row per issue per affected page |
 | Concurrency | p-queue (3 pages at a time) |
 | Testing | Vitest (unit) + Playwright Test (E2E) |
 

@@ -112,6 +112,13 @@ export default function ReportPage() {
             <ThemeToggle />
             <EmailReportDialog scanId={scanId} />
             <a
+              href={`/api/scan/${scanId}/export/csv`}
+              download
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+            >
+              Export CSV
+            </a>
+            <a
               href={`/api/scan/${scanId}/export/json`}
               download
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring transition-colors"

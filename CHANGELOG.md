@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **CSV export:** a third export alongside JSON and PDF, at `/api/scan/[scanId]/export/csv`. One row per issue per affected page, so a report can be filtered by URL to hand a developer everything broken on one page, or pivoted by severity or WCAG criterion. `occurrenceCount` is deliberately omitted — it totals across pages and would mislead on a per-page row. Written with a UTF-8 BOM so Excel renders å/ä/ö, and cells beginning `=`, `+`, `-` or `@` are prefixed with an apostrophe: `code_example` and `recommended_fix` carry HTML scraped from the target site, and without that a hostile page could land an executable formula in a spreadsheet opened by a client.
+
 ### Fixed
 
 - **`BLOCKED:403` leaked an internal sentinel to the UI:** a failed first navigation surfaced the crawler's own marker string, which told the operator nothing. Failures are now explained by status — 403 as a firewall or bot-protection refusal with the allowlisting routes, 401 as missing credentials, 429 as rate limiting, 404 as a wrong URL, 5xx as the site's fault, and no response as unreachable — always naming the URL. Deliberately no evasion path: on a site you do not own, the way through a 403 is permission (see DEC-1).
