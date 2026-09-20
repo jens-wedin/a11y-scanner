@@ -39,6 +39,20 @@ export function scanConcurrency(
   return chromiumStrategy(env) === "sparticuz" ? 1 : 3;
 }
 
+/**
+ * How many pages one browser instance should handle before being replaced.
+ *
+ * @sparticuz/chromium runs --single-process: a renderer crash takes the whole
+ * browser down and every later page with it. Recycling per page turns that
+ * into the loss of one page. Locally Chromium is multi-process and one
+ * instance can serve the whole run.
+ */
+export function pagesPerBrowser(
+  env: Record<string, string | undefined> = process.env
+): number {
+  return chromiumStrategy(env) === "sparticuz" ? 1 : Infinity;
+}
+
 export async function launchBrowser() {
   // Imported lazily on purpose. instrumentation.ts -> scheduler -> crawler
   // reaches this module at boot, and a top-level browser import made a
