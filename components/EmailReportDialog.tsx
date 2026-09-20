@@ -13,15 +13,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ATTACHMENT_TYPES, type AttachmentType } from "@/lib/email-format";
 
-type EmailFormat = "embed" | "pdf" | "json" | "pdf+json";
+type DeliveryMode = "embed" | "attach";
 
-const FORMAT_OPTIONS: { value: EmailFormat; label: string; description: string }[] = [
+const MODE_OPTIONS: { value: DeliveryMode; label: string; description: string }[] = [
   { value: "embed", label: "Embed in email", description: "Full report in the email body" },
-  { value: "pdf", label: "Attach PDF", description: "Summary email with PDF attachment" },
-  { value: "json", label: "Attach JSON", description: "Summary email with JSON attachment" },
-  { value: "pdf+json", label: "Attach PDF + JSON", description: "Summary email with both files" },
+  { value: "attach", label: "Send as attachments", description: "Summary email with files attached" },
 ];
+
+const ATTACHMENT_LABELS: Record<AttachmentType, { label: string; description: string }> = {
+  pdf: { label: "PDF", description: "Formatted report for sharing" },
+  json: { label: "JSON", description: "Raw data for tooling" },
+  csv: { label: "CSV", description: "One row per issue per page, for spreadsheets" },
+};
 
 interface EmailReportDialogProps {
   scanId: string;
@@ -30,7 +36,18 @@ interface EmailReportDialogProps {
 export function EmailReportDialog({ scanId }: EmailReportDialogProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [format, setFormat] = useState<EmailFormat>("pdf");
+  const [mode, setMode] = useState<DeliveryMode>("attach");
+  const [attachments, setAttachments] = useState<AttachmentType[]>(["pdf"]);
+
+  function toggleAttachment(type: AttachmentType) {
+    setAttachments((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
+  }
+
+  // The API takes a "+"-joined string, e.g. "pdf+csv".
+  const format = mode === "embed" ? "embed" : attachments.join("+");
+  const nothingSelected = mode === "attach" && attachments.length === 0;
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,11 +132,11 @@ export function EmailReportDialog({ scanId }: EmailReportDialogProps) {
               Delivery format
             </legend>
             <RadioGroup
-              value={format}
-              onValueChange={(v) => setFormat(v as EmailFormat)}
+              value={mode}
+              onValueChange={(v) => setMode(v as DeliveryMode)}
               className="space-y-2"
             >
-              {FORMAT_OPTIONS.map((opt) => (
+              {MODE_OPTIONS.map((opt) => (
                 <div key={opt.value} className="flex items-start gap-2">
                   <RadioGroupItem
                     value={opt.value}
@@ -135,6 +152,40 @@ export function EmailReportDialog({ scanId }: EmailReportDialogProps) {
               ))}
             </RadioGroup>
           </fieldset>
+
+          {mode === "attach" && (
+            <fieldset disabled={loading} className="mt-4">
+              <legend className="text-sm font-medium text-foreground mb-2">
+                Files to attach
+              </legend>
+              <div className="space-y-2">
+                {ATTACHMENT_TYPES.map((type) => (
+                  <div key={type} className="flex items-start gap-2">
+                    <Checkbox
+                      id={`attach-${type}`}
+                      checked={attachments.includes(type)}
+                      onCheckedChange={() => toggleAttachment(type)}
+                      aria-label={`Attach ${ATTACHMENT_LABELS[type].label}`}
+                      className="mt-0.5"
+                    />
+                    <label htmlFor={`attach-${type}`} className="cursor-pointer">
+                      <div className="text-sm font-medium text-foreground">
+                        {ATTACHMENT_LABELS[type].label}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {ATTACHMENT_LABELS[type].description}
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {nothingSelected && (
+                <p role="alert" className="mt-2 text-xs text-destructive">
+                  Choose at least one file to attach.
+                </p>
+              )}
+            </fieldset>
+          )}
 
           {result && (
             <div
@@ -161,7 +212,11 @@ export function EmailReportDialog({ scanId }: EmailReportDialogProps) {
                 </button>
               }
             />
-            <Button type="submit" disabled={loading || !email} aria-busy={loading}>
+            <Button
+              type="submit"
+              disabled={loading || !email || nothingSelected}
+              aria-busy={loading}
+            >
               {loading ? "Sending…" : "Send"}
             </Button>
           </div>

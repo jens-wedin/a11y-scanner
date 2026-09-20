@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/queue";
 import { loadScanReport } from "@/lib/report";
 import { renderPDF } from "@/lib/pdf";
+import { toCsv } from "@/lib/csv";
+import { parseEmailFormat } from "@/lib/email-format";
 import { getResendClient, getResendFrom } from "@/lib/resend";
 import {
   buildReportEmailHtml,
   buildReportSummaryHtml,
 } from "@/lib/report-email";
-
-const VALID_FORMATS = ["embed", "pdf", "json", "pdf+json"] as const;
-type EmailFormat = (typeof VALID_FORMATS)[number];
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -48,11 +47,9 @@ export async function POST(
     );
   }
 
-  if (!format || !VALID_FORMATS.includes(format as EmailFormat)) {
-    return NextResponse.json(
-      { error: `Format must be one of: ${VALID_FORMATS.join(", ")}` },
-      { status: 400 }
-    );
+  const parsedFormat = parseEmailFormat(format);
+  if ("error" in parsedFormat) {
+    return NextResponse.json({ error: parsedFormat.error }, { status: 400 });
   }
 
   // Load report
@@ -67,25 +64,32 @@ export async function POST(
   const subject = `Accessibility Report: ${report.targetUrl}`;
   const attachments: { filename: string; content: Buffer | string }[] = [];
 
+  const shortId = scanId.slice(0, 8);
   let html: string;
-  if (format === "embed") {
+
+  if (parsedFormat.mode === "embed") {
     html = buildReportEmailHtml(report);
   } else {
     html = buildReportSummaryHtml(report);
 
-    if (format === "pdf" || format === "pdf+json") {
-      const pdfBuffer = await renderPDF(report);
-      attachments.push({
-        filename: `a11y-report-${scanId.slice(0, 8)}.pdf`,
-        content: Buffer.from(pdfBuffer),
-      });
-    }
-
-    if (format === "json" || format === "pdf+json") {
-      attachments.push({
-        filename: `a11y-report-${scanId.slice(0, 8)}.json`,
-        content: Buffer.from(JSON.stringify(report, null, 2)),
-      });
+    for (const type of parsedFormat.attachments) {
+      if (type === "pdf") {
+        const pdfBuffer = await renderPDF(report);
+        attachments.push({
+          filename: `a11y-report-${shortId}.pdf`,
+          content: Buffer.from(pdfBuffer),
+        });
+      } else if (type === "json") {
+        attachments.push({
+          filename: `a11y-report-${shortId}.json`,
+          content: Buffer.from(JSON.stringify(report, null, 2)),
+        });
+      } else if (type === "csv") {
+        attachments.push({
+          filename: `a11y-report-${shortId}.csv`,
+          content: Buffer.from(toCsv(report), "utf-8"),
+        });
+      }
     }
   }
 

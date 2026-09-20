@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **CSV as an email attachment:** the email dialog can now attach the CSV, and any combination of PDF/JSON/CSV. Rather than enumerate combinations — which doubles with each new type — `lib/email-format.ts` parses the `+`-joined string generically, so `pdf+csv` and `pdf+json+csv` work without new cases. Existing callers sending `pdf`, `json` or `pdf+json` are unaffected. The dialog now asks the real question in two parts: embed or attach, then which files, with the send button disabled while nothing is selected.
 - **CSV export:** a third export alongside JSON and PDF, at `/api/scan/[scanId]/export/csv`. One row per issue per affected page, so a report can be filtered by URL to hand a developer everything broken on one page, or pivoted by severity or WCAG criterion. `occurrenceCount` is deliberately omitted — it totals across pages and would mislead on a per-page row. Written with a UTF-8 BOM so Excel renders å/ä/ö, and cells beginning `=`, `+`, `-` or `@` are prefixed with an apostrophe: `code_example` and `recommended_fix` carry HTML scraped from the target site, and without that a hostile page could land an executable formula in a spreadsheet opened by a client.
 
 ### Fixed
