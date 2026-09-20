@@ -149,6 +149,23 @@ path is consent, not circumvention:
 3. If they decline, do not scan. A blocked crawl is a business conversation,
    not a technical problem.
 
+### When a scan returns HTTP 403
+
+A 403 on the first page almost always means a firewall or bot-protection
+service, not a broken site. The scanner will say so rather than retrying
+behind a disguise. Options, in order of preference:
+
+| Option | When it fits |
+|---|---|
+| Owner allowlists the user-agent | You have a signed engagement. Cheapest for them. |
+| Owner allowlists the scanning IP | Their WAF filters on IP. Needs a fixed egress address — Vercel Functions do not have one, so run these scans from a host you control. |
+| Scan a staging environment | Pre-launch audits, or where production is locked down. Usually the best data anyway, since staging has no CDN caching in the way. |
+| Client runs axe themselves | No access at all. Hand them the axe DevTools extension and read the export. |
+
+For prospecting — auditing a site to show someone a problem they have not
+hired you to find — a 403 is a clear signal to ask first. That conversation is
+also a better opening than an unsolicited report.
+
 Earlier versions shipped `puppeteer-extra-plugin-stealth`, `rebrowser-playwright`
 and a Cloudflare Turnstile checkbox-clicker. These were removed in 0.7.0 — see
 CHANGELOG and `docs/BACKLOG.md` (DEC-1) for the reasoning.

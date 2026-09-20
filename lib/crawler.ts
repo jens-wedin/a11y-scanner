@@ -2,6 +2,65 @@ import { launchBrowser, createContext, crawlDelay } from "./browser";
 import { assertScannableUrl, BlockedUrlError } from "./url-guard";
 import type { CrawledUrl } from "./types";
 
+/**
+ * Turns a failed first navigation into something the operator can act on.
+ *
+ * The crawler used to surface its internal sentinel ("BLOCKED:403") straight
+ * to the UI, which said nothing about what to do next.
+ *
+ * Note what this deliberately does not offer: a way around the block. The
+ * scanner identifies itself honestly and does not evade bot protection — on a
+ * site you do not own, the route through a 403 is permission, not
+ * circumvention. See DEC-1 in docs/BACKLOG.md.
+ */
+export function describeBlock(status: number, url: string): string {
+  const where = `Could not scan ${url}`;
+
+  if (status === 403) {
+    return (
+      `${where} — the site refused the request (HTTP 403). This is normally a ` +
+      `firewall or bot-protection service rather than a broken page. Ask the ` +
+      `site owner for written permission and have them allowlist the scanner's ` +
+      `user-agent, or point the scan at a staging environment you control.`
+    );
+  }
+
+  if (status === 401) {
+    return (
+      `${where} — the site requires authentication (HTTP 401). The scanner has ` +
+      `no credentials. Scan a publicly reachable environment, or one where the ` +
+      `owner has granted access.`
+    );
+  }
+
+  if (status === 429) {
+    return (
+      `${where} — the site is rate limiting us (HTTP 429, too many requests). ` +
+      `Wait and try again, or scan fewer pages so the crawl is slower.`
+    );
+  }
+
+  if (status === 404) {
+    return `${where} — the page was not found (HTTP 404). Check the URL is correct.`;
+  }
+
+  if (status >= 500) {
+    return (
+      `${where} — the site returned a server error (HTTP ${status}). That is a ` +
+      `fault on their side; try again later.`
+    );
+  }
+
+  if (status === 0) {
+    return (
+      `${where} — the site did not respond. It may be unreachable, the request ` +
+      `may have timed out, or the address may be wrong.`
+    );
+  }
+
+  return `${where} — the site refused the request (HTTP ${status}).`;
+}
+
 export function isSameDomain(url: string, origin: string): boolean {
   try {
     return new URL(url).origin === new URL(origin).origin;
@@ -144,7 +203,17 @@ export async function crawl(
   // Validated before anything launches, so a blocked URL surfaces as itself.
   await assertScannableUrl(startUrl);
 
-  const urls = await runCrawl(startUrl, maxPages, maxDepth);
+  let urls: CrawledUrl[];
+  try {
+    urls = await runCrawl(startUrl, maxPages, maxDepth);
+  } catch (err) {
+    // Translate the internal sentinel rather than letting it reach the UI.
+    if (err instanceof Error && err.message.startsWith("BLOCKED:")) {
+      const status = Number(err.message.slice("BLOCKED:".length)) || 0;
+      throw new Error(describeBlock(status, startUrl));
+    }
+    throw err;
+  }
 
   if (urls.length === 0) {
     throw new Error(
