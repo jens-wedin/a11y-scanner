@@ -12,6 +12,69 @@ import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
  * `data->>'field'` if reporting needs it later.
  */
 
+const TRANSIENT_CODES = new Set([
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "EAI_AGAIN",
+  "ENETUNREACH",
+  "EPIPE",
+  "UND_ERR_SOCKET",
+]);
+
+/**
+ * Whether a database error is worth retrying.
+ *
+ * Neon computes scale to zero after five minutes idle, and the first query
+ * afterwards can have its TLS handshake reset while the compute wakes. In
+ * production that rejection escaped and killed the function outright
+ * (exit status 128), discarding a crawl that had already succeeded.
+ *
+ * SQL errors are deliberately excluded: a bad query never becomes a good one.
+ */
+export function isTransientDbError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+
+  const seen = new Set<unknown>();
+  let current: unknown = err;
+
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const e = current as { code?: unknown; message?: unknown; cause?: unknown; sourceError?: unknown };
+
+    if (typeof e.code === "string") {
+      // Postgres SQLSTATE codes are five characters; those are real SQL faults.
+      if (/^[0-9A-Z]{5}$/.test(e.code)) return false;
+      if (TRANSIENT_CODES.has(e.code)) return true;
+    }
+    if (typeof e.message === "string" && /fetch failed|socket disconnected|connection closed|terminated unexpectedly/i.test(e.message)) {
+      return true;
+    }
+
+    current = e.sourceError ?? e.cause;
+  }
+
+  return false;
+}
+
+const MAX_ATTEMPTS = 3;
+
+/** Retries transient failures with a short backoff. */
+async function withRetry<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run();
+    } catch (err) {
+      if (attempt >= MAX_ATTEMPTS || !isTransientDbError(err)) throw err;
+      const backoff = 150 * 2 ** (attempt - 1);
+      console.warn(
+        `[db] transient failure (attempt ${attempt}/${MAX_ATTEMPTS}), retrying in ${backoff}ms`
+      );
+      await new Promise((r) => setTimeout(r, backoff));
+    }
+  }
+}
+
 let cached: NeonQueryFunction<false, false> | null = null;
 
 /**
@@ -28,7 +91,11 @@ export function getSql(): NeonQueryFunction<false, false> {
           "then run `vercel env pull .env.local --yes`."
       );
     }
-    cached = neon(url);
+    const base = neon(url);
+    // Wrap the tagged-template function so every query inherits the retry.
+    cached = ((...args: unknown[]) =>
+      withRetry(() => (base as unknown as (...a: unknown[]) => Promise<unknown>)(...args))
+    ) as unknown as NeonQueryFunction<false, false>;
   }
   return cached;
 }
@@ -36,7 +103,16 @@ export function getSql(): NeonQueryFunction<false, false> {
 let schemaReady: Promise<void> | null = null;
 
 async function createSchema(): Promise<void> {
-  const sql = getSql();
+  // Neon advises the direct (non-pooled) connection for DDL — the pooled
+  // endpoint runs PgBouncer in transaction mode. Falls back to the pooled URL
+  // when no unpooled one is provisioned.
+  const direct = process.env.DATABASE_URL_UNPOOLED;
+  const sql = direct
+    ? ((...args: unknown[]) =>
+        withRetry(() =>
+          (neon(direct) as unknown as (...a: unknown[]) => Promise<unknown>)(...args)
+        )) as unknown as NeonQueryFunction<false, false>
+    : getSql();
 
   await sql`
     create table if not exists scan_jobs (

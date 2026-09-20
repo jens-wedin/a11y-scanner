@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { getSql, ensureSchema } from "./db";
+import { getSql, ensureSchema, isTransientDbError } from "./db";
 
 describe("db schema", () => {
   beforeAll(async () => {
@@ -29,5 +29,47 @@ describe("db schema", () => {
     const rows = await sql`select data from reports where scan_id = ${id}`;
     expect(rows[0].data).toEqual({ hello: "world" });
     await sql`delete from reports where scan_id = ${id}`;
+  });
+});
+
+describe("isTransientDbError", () => {
+  // Production: the Neon compute had scaled to zero and the TLS handshake was
+  // reset while it woke. The rejection escaped and killed the function
+  // (exit status 128), taking a successful crawl down with it.
+  it("treats a reset socket as transient", () => {
+    expect(
+      isTransientDbError(
+        Object.assign(new Error("fetch failed"), {
+          sourceError: Object.assign(new Error("socket disconnected"), {
+            cause: Object.assign(new Error("reset"), { code: "ECONNRESET" }),
+          }),
+        })
+      )
+    ).toBe(true);
+  });
+
+  it("treats a bare fetch failure as transient", () => {
+    expect(isTransientDbError(new Error("Error connecting to database: TypeError: fetch failed"))).toBe(true);
+  });
+
+  it("treats connection timeouts as transient", () => {
+    for (const code of ["ETIMEDOUT", "ECONNREFUSED", "EAI_AGAIN", "ENETUNREACH"]) {
+      expect(isTransientDbError(Object.assign(new Error("x"), { code }))).toBe(true);
+    }
+  });
+
+  // A schema or query mistake must not be retried — it will never succeed and
+  // retrying just delays the real error.
+  it("does not treat a SQL error as transient", () => {
+    expect(
+      isTransientDbError(
+        Object.assign(new Error('relation "nope" does not exist'), { code: "42P01" })
+      )
+    ).toBe(false);
+  });
+
+  it("does not treat an arbitrary error as transient", () => {
+    expect(isTransientDbError(new Error("something else"))).toBe(false);
+    expect(isTransientDbError(null)).toBe(false);
   });
 });

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A transient database blip killed the whole function (OPS-1):** after a crawl had already succeeded, the process exited with status 128 on an unhandled `NeonDbError` — `ECONNRESET` during the TLS handshake to Neon. Neon computes scale to zero after five minutes idle, so the first query after a gap can be reset while the compute wakes. Queries now retry transient failures (connection-level errors only; SQL errors are never retried) with a short backoff, DDL uses the direct non-pooled connection per Neon's guidance, and an `unhandledRejection` handler logs rather than letting a stray rejection terminate an in-flight scan.
 - **Scan died partway through on Vercel (OPS-1):** `@sparticuz/chromium` launches with `--single-process --no-zygote`, and driving three pages at once through it inside a memory-capped function killed the browser mid-scan — `browserContext.close: Target page, context or browser has been closed`. Page scanning is now serialised on serverless (still parallel locally, where Chromium is multi-process), and the browser routes get 3009 MB. The `finally` block's `context.close()` also no longer throws over the real error when the browser has already gone.
 
 ### Changed
