@@ -1,4 +1,4 @@
-import { launchBrowser, createContext } from "./browser";
+import { launchBrowser, createContext, scanConcurrency } from "./browser";
 import { assertScannableUrl, BlockedUrlError } from "./url-guard";
 import AxeBuilder from "@axe-core/playwright";
 import PQueue from "p-queue";
@@ -34,9 +34,7 @@ export async function scanPages(
   if (allowed.length === 0) return rejected;
 
   const browser = await launchBrowser();
-  // Reduce concurrency to 1 when using a visible browser to avoid opening
-  // multiple Chrome windows simultaneously
-  const queue = new PQueue({ concurrency: 3 });
+  const queue = new PQueue({ concurrency: scanConcurrency() });
   const results: RawPageResult[] = [...rejected];
 
   try {
@@ -91,7 +89,9 @@ export async function scanPages(
             results.push(result);
             await onProgress(result);
           } finally {
-            await context.close();
+            // If the browser already died, closing throws and that throw would
+            // replace the real failure with a misleading cleanup error.
+            await context.close().catch(() => {});
           }
         })
       )

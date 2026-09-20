@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Scan died partway through on Vercel (OPS-1):** `@sparticuz/chromium` launches with `--single-process --no-zygote`, and driving three pages at once through it inside a memory-capped function killed the browser mid-scan — `browserContext.close: Target page, context or browser has been closed`. Page scanning is now serialised on serverless (still parallel locally, where Chromium is multi-process), and the browser routes get 3009 MB. The `finally` block's `context.close()` also no longer throws over the real error when the browser has already gone.
+
 ### Changed
 
 - **Scheduling moved to Vercel Cron (OPS-1):** `node-cron` kept timers inside the server process, so on Vercel — where functions are not always-on — schedules never fired at all. A cron entry now polls `/api/cron/run-schedules` every five minutes, and `lib/due.ts` decides which schedules are due as a pure function of the schedule and the current time. The route fails closed when `CRON_SECRET` is unset, so a deploy made before the secret is configured cannot expose an unauthenticated endpoint that starts scans. A `runningAt` older than an hour counts as abandoned, so a crashed run does not wedge a schedule forever.

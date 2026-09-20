@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chromiumStrategy, USER_AGENT } from "./browser";
+import { chromiumStrategy, scanConcurrency, USER_AGENT } from "./browser";
 
 describe("chromiumStrategy", () => {
   // Vercel functions run on Amazon Linux, which lacks the shared libraries a
@@ -31,5 +31,25 @@ describe("USER_AGENT", () => {
 
   it("does not impersonate a consumer browser", () => {
     expect(USER_AGENT).not.toMatch(/Mozilla|AppleWebKit|Safari/);
+  });
+});
+
+describe("scanConcurrency", () => {
+  // @sparticuz/chromium launches with --single-process --no-zygote inside a
+  // memory-capped function. Driving three pages at once through that killed the
+  // browser mid-scan: "Target page, context or browser has been closed".
+  it("serialises pages on serverless", () => {
+    expect(scanConcurrency({ VERCEL: "1" })).toBe(1);
+    expect(scanConcurrency({ AWS_LAMBDA_FUNCTION_NAME: "fn" })).toBe(1);
+  });
+
+  it("allows parallelism locally, where Chromium is multi-process", () => {
+    expect(scanConcurrency({})).toBeGreaterThan(1);
+  });
+
+  it("never returns zero or negative", () => {
+    for (const env of [{}, { VERCEL: "1" }]) {
+      expect(scanConcurrency(env)).toBeGreaterThanOrEqual(1);
+    }
   });
 });

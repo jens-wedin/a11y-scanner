@@ -24,6 +24,21 @@ export function chromiumStrategy(
   return "playwright";
 }
 
+/**
+ * How many pages to scan at once.
+ *
+ * @sparticuz/chromium launches with --single-process --no-zygote inside a
+ * memory-capped function. Three concurrent pages through that browser killed it
+ * mid-scan ("Target page, context or browser has been closed"), so serverless
+ * runs strictly one page at a time. Locally Chromium is multi-process and can
+ * take the parallelism.
+ */
+export function scanConcurrency(
+  env: Record<string, string | undefined> = process.env
+): number {
+  return chromiumStrategy(env) === "sparticuz" ? 1 : 3;
+}
+
 export async function launchBrowser() {
   // Imported lazily on purpose. instrumentation.ts -> scheduler -> crawler
   // reaches this module at boot, and a top-level browser import made a
