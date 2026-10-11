@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- 2026-10-11 — Production address is now https://a11y.studiomanfred.com (old vercel.app address still works).
+
 ### Added
 
 - **CSV as an email attachment:** the email dialog can now attach the CSV, and any combination of PDF/JSON/CSV. Rather than enumerate combinations — which doubles with each new type — `lib/email-format.ts` parses the `+`-joined string generically, so `pdf+csv` and `pdf+json+csv` work without new cases. Existing callers sending `pdf`, `json` or `pdf+json` are unaffected. The dialog now asks the real question in two parts: embed or attach, then which files, with the send button disabled while nothing is selected.
